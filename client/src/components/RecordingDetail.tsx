@@ -40,7 +40,7 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
     data: transcript,
     isLoading: isLoadingTranscript,
     error: transcriptError
-  } = useQuery<{ content: string }>({
+  } = useQuery<{ content: Array<{ timestamp: string; speaker: string; text: string }> }>({
     queryKey: [`/api/recordings/${recordingId}/transcript`],
     enabled: !!recording?.transcribed,
   });
@@ -89,33 +89,24 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
     }
   };
 
-  // Parse transcript content to extract timestamps
-  const parseTranscriptWithTimestamps = (content: string) => {
-    if (!content) return [];
+  // Convert API transcript response to our internal format
+  const processTranscript = (content: Array<{ timestamp: string; speaker: string; text: string }> | undefined) => {
+    if (!content || content.length === 0) return [];
     
-    const lines = content.split('\n');
-    const result = [];
-    
-    for (const line of lines) {
-      const timeMatch = line.match(/^(\d{2}):(\d{2})/);
-      if (timeMatch) {
-        const minutes = parseInt(timeMatch[1], 10);
-        const seconds = parseInt(timeMatch[2], 10);
-        const timestamp = minutes * 60 + seconds;
-        
-        // Extract speaker and text
-        const parts = line.substring(5).split('：');
-        const speaker = parts.length > 1 ? parts[0].trim() : '發言者';
-        const text = parts.length > 1 ? parts[1].trim() : parts[0].trim();
-        
-        result.push({ timestamp, speaker, text });
-      }
-    }
-    
-    return result;
+    return content.map(item => {
+      // Convert timestamp "MM:SS" to seconds
+      const [minutes, seconds] = item.timestamp.split(':').map(num => parseInt(num, 10));
+      const timestamp = minutes * 60 + seconds;
+      
+      return {
+        timestamp,
+        speaker: item.speaker,
+        text: item.text
+      };
+    });
   };
   
-  const parsedTranscript = transcript ? parseTranscriptWithTimestamps(transcript.content) : [];
+  const parsedTranscript = transcript?.content ? processTranscript(transcript.content) : [];
 
   // Check if we need to regenerate notes
   const canGenerateNotes = recording?.transcribed && !generateNotesMutation.isPending;
