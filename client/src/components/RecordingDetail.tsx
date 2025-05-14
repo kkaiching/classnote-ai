@@ -209,9 +209,9 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
         <TabsContent value="transcript" className="mt-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">詳細逐字稿</h2>
-            {transcript && (
+            {transcript?.content && transcript.content.length > 0 && (
               <CopyButton
-                text={transcript.content}
+                text={transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n')}
                 label="複製全文"
                 successMessage="逐字稿已複製到剪貼簿"
               />
