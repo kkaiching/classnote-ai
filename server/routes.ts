@@ -34,12 +34,12 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB max file size
   },
   fileFilter: (req, file, cb) => {
-    const allowedFormats = ['.mp3', '.m4a', '.wav'];
+    const allowedFormats = ['.mp3', '.m4a', '.wav', '.webm'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowedFormats.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file format. Only MP3, M4A, and WAV are supported.'));
+      cb(new Error('Invalid file format. Only MP3, M4A, WAV, and WebM are supported.'));
     }
   }
 });
