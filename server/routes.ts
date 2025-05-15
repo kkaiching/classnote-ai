@@ -75,6 +75,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch recording" });
     }
   });
+  
+  // Delete a recording
+  app.delete("/api/recordings/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid recording ID" });
+      }
+
+      // 確認錄音存在
+      const recording = await storage.getRecording(id);
+      if (!recording) {
+        return res.status(404).json({ message: "Recording not found" });
+      }
+
+      // 從檔案系統刪除音檔
+      const filePath = path.join(uploadsDir, recording.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+
+      // 從存儲中刪除錄音
+      const success = await storage.deleteRecording(id);
+      if (success) {
+        res.status(200).json({ success: true, message: "Recording deleted successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to delete recording" });
+      }
+    } catch (error) {
+      console.error("Error deleting recording:", error);
+      res.status(500).json({ success: false, message: "Failed to delete recording" });
+    }
+  });
 
   // Upload a new audio file
   app.post("/api/uploadAudio", upload.single('file'), async (req: Request, res: Response) => {

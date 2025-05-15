@@ -14,6 +14,7 @@ export interface IStorage {
   updateRecordingStatus(id: number, status: string): Promise<Recording | undefined>;
   updateRecordingTranscribed(id: number, transcribed: boolean): Promise<Recording | undefined>;
   updateRecordingNotesGenerated(id: number, notesGenerated: boolean): Promise<Recording | undefined>;
+  deleteRecording(id: number): Promise<boolean>;
 
   // Transcript methods
   createTranscript(transcript: InsertTranscript): Promise<Transcript>;
@@ -68,7 +69,14 @@ export class MemStorage implements IStorage {
   async createRecording(insertRecording: InsertRecording): Promise<Recording> {
     const id = this.recordingCurrentId++;
     const createdAt = new Date();
-    const recording: Recording = { ...insertRecording, id, createdAt };
+    const recording: Recording = { 
+      ...insertRecording, 
+      id, 
+      createdAt,
+      transcribed: insertRecording.transcribed || false,
+      notesGenerated: insertRecording.notesGenerated || false,
+      duration: insertRecording.duration || null
+    };
     this.recordings.set(id, recording);
     return recording;
   }
@@ -108,6 +116,26 @@ export class MemStorage implements IStorage {
     const updatedRecording = { ...recording, notesGenerated };
     this.recordings.set(id, updatedRecording);
     return updatedRecording;
+  }
+
+  async deleteRecording(id: number): Promise<boolean> {
+    // 檢查錄音是否存在
+    const recording = this.recordings.get(id);
+    if (!recording) return false;
+    
+    // 刪除相關資源 (transcript 和 note)
+    const transcript = Array.from(this.transcripts.values()).find(t => t.recordingId === id);
+    if (transcript) {
+      this.transcripts.delete(transcript.id);
+    }
+    
+    const note = Array.from(this.notes.values()).find(n => n.recordingId === id);
+    if (note) {
+      this.notes.delete(note.id);
+    }
+    
+    // 刪除錄音
+    return this.recordings.delete(id);
   }
 
   // Transcript methods
