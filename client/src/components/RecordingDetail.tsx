@@ -97,6 +97,34 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
     },
   });
 
+  // Delete recording mutation
+  const deleteRecordingMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("DELETE", `/api/recordings/${recordingId}`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "已刪除錄音",
+        description: "錄音已成功刪除",
+      });
+      
+      // 關閉刪除對話框
+      setShowDeleteDialog(false);
+      
+      // 導航回首頁
+      navigate('/');
+    },
+    onError: (error) => {
+      console.error("Error deleting recording:", error);
+      toast({
+        title: "刪除失敗",
+        description: "無法刪除錄音，請稍後再試",
+        variant: "destructive",
+      });
+      setShowDeleteDialog(false);
+    },
+  });
+
   // Handle timestamp click in transcript
   const handleTimestampClick = (timestamp: number) => {
     if (window && (window as any).seekToTimestamp) {
@@ -175,14 +203,49 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
 
   return (
     <div>
-      {/* Back button */}
-      <div className="mb-6">
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
+              確認刪除
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              您確定要刪除錄音 "{recording?.title}" 嗎？此操作無法撤銷，所有相關資料（包括逐字稿和筆記）都將被永久刪除。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteRecordingMutation.isPending}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteRecordingMutation.mutate()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteRecordingMutation.isPending}
+            >
+              {deleteRecordingMutation.isPending ? "刪除中..." : "確認刪除"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Back button and action buttons */}
+      <div className="mb-6 flex justify-between items-center">
         <Link href="/">
-          <a className="inline-flex items-center text-gray-600 hover:text-gray-900">
+          <div className="inline-flex items-center text-gray-600 hover:text-gray-900 cursor-pointer">
             <ArrowLeft className="h-4 w-4 mr-1" />
             <span>返回錄音列表</span>
-          </a>
+          </div>
         </Link>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-red-500 hover:bg-red-50 hover:text-red-600"
+          onClick={() => setShowDeleteDialog(true)}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          刪除錄音
+        </Button>
       </div>
 
       {/* Recording header */}

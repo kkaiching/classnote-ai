@@ -7,7 +7,7 @@ export function NavBar() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link href="/">
-              <a className="flex-shrink-0 flex items-center cursor-pointer">
+              <div className="flex-shrink-0 flex items-center cursor-pointer">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6 text-primary mr-2"
@@ -22,7 +22,7 @@ export function NavBar() {
                   <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                 </svg>
                 <span className="text-xl font-bold text-gray-800">ClassNote AI</span>
-              </a>
+              </div>
             </Link>
           </div>
           <div className="flex items-center">

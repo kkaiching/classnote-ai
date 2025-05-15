@@ -186,7 +186,7 @@ export function RecordingList() {
             return (
               <div key={recording.id} className="relative group">
                 <Link href={`/recording/${recording.id}`}>
-                  <a className="block">
+                  <div className="block">
                     <Card className="bg-white hover:shadow-md transition-shadow duration-200 cursor-pointer">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
@@ -267,7 +267,7 @@ export function RecordingList() {
                         </div>
                       </CardContent>
                     </Card>
-                  </a>
+                  </div>
                 </Link>
               </div>
             );
