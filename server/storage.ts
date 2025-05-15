@@ -14,6 +14,7 @@ export interface IStorage {
   updateRecordingStatus(id: number, status: string): Promise<Recording | undefined>;
   updateRecordingTranscribed(id: number, transcribed: boolean): Promise<Recording | undefined>;
   updateRecordingNotesGenerated(id: number, notesGenerated: boolean): Promise<Recording | undefined>;
+  updateRecordingTitle(id: number, title: string): Promise<Recording | undefined>;
   deleteRecording(id: number): Promise<boolean>;
 
   // Transcript methods
@@ -114,6 +115,15 @@ export class MemStorage implements IStorage {
     if (!recording) return undefined;
     
     const updatedRecording = { ...recording, notesGenerated };
+    this.recordings.set(id, updatedRecording);
+    return updatedRecording;
+  }
+  
+  async updateRecordingTitle(id: number, title: string): Promise<Recording | undefined> {
+    const recording = this.recordings.get(id);
+    if (!recording) return undefined;
+    
+    const updatedRecording = { ...recording, title };
     this.recordings.set(id, updatedRecording);
     return updatedRecording;
   }

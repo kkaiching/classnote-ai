@@ -12,6 +12,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { RecordingTitleEditor } from "@/components/RecordingTitleEditor";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -250,7 +251,7 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
 
       {/* Recording header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">{recording.title}</h1>
+        <RecordingTitleEditor recording={recording} />
         <div className="mt-2 flex flex-wrap items-center text-gray-500 text-sm gap-x-4 gap-y-2">
           <div className="flex items-center">
             <Clock className="h-4 w-4 mr-1" />

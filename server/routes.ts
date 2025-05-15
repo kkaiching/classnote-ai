@@ -108,6 +108,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: "Failed to delete recording" });
     }
   });
+  
+  // Update recording title
+  app.patch("/api/recordings/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid recording ID" });
+      }
+      
+      // 驗證請求體
+      const schema = z.object({
+        title: z.string().min(1, "標題不得為空")
+      });
+      
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid input", 
+          errors: result.error.errors 
+        });
+      }
+      
+      const { title } = result.data;
+      
+      // 確認錄音存在
+      const recording = await storage.getRecording(id);
+      if (!recording) {
+        return res.status(404).json({ success: false, message: "Recording not found" });
+      }
+      
+      // 更新標題
+      const updatedRecording = await storage.updateRecordingTitle(id, title);
+      if (updatedRecording) {
+        res.status(200).json({ 
+          success: true, 
+          message: "Recording title updated successfully",
+          recording: updatedRecording
+        });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to update recording title" });
+      }
+    } catch (error) {
+      console.error("Error updating recording title:", error);
+      res.status(500).json({ success: false, message: "Failed to update recording title" });
+    }
+  });
 
   // Upload a new audio file
   app.post("/api/uploadAudio", upload.single('file'), async (req: Request, res: Response) => {
