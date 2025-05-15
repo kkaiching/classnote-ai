@@ -8,7 +8,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileUploadResponse } from "@shared/schema";
 
-export function UploadSection() {
+interface UploadSectionProps {
+  onUploadSuccess?: () => void;
+}
+
+export function UploadSection({ onUploadSuccess }: UploadSectionProps = {}) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -76,6 +80,11 @@ export function UploadSection() {
 
       // Invalidate the recordings query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["/api/recordings"] });
+      
+      // 如果有設置上傳成功回調，則呼叫它
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
     } catch (error) {
       console.error("Upload error:", error);
       toast({
@@ -89,34 +98,30 @@ export function UploadSection() {
   };
 
   return (
-    <div className="mb-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">上傳課堂錄音</h1>
-      
+    <div>
       <div className="space-y-4">
         <Dropzone onFilesAccepted={handleFilesAccepted} />
         
         {selectedFile && (
-          <div className="bg-white rounded-lg border p-4">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">錄音標題</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="請輸入錄音標題"
-                  className="mt-1"
-                />
-              </div>
-              
-              <Button
-                onClick={handleUpload}
-                disabled={isUploading}
-                className="w-full"
-              >
-                {isUploading ? "上傳中..." : "開始上傳"}
-              </Button>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="title">錄音標題</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="請輸入錄音標題"
+                className="mt-1"
+              />
             </div>
+            
+            <Button
+              onClick={handleUpload}
+              disabled={isUploading}
+              className="w-full"
+            >
+              {isUploading ? "上傳中..." : "開始上傳"}
+            </Button>
           </div>
         )}
       </div>

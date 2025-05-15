@@ -147,8 +147,7 @@ export function RecordingList() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">您的錄音檔</h2>
+      <div className="flex justify-end items-center mb-4">
         <div className="text-sm text-gray-500">
           共 {recordings?.length || 0} 個錄音
         </div>

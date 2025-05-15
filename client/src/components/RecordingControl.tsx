@@ -192,10 +192,26 @@ export function RecordingControl() {
       
       const data = await response.json();
       
+      // 自動開始轉錄
+      if (data.recording && data.recording.id) {
+        try {
+          await fetch(`/api/transcribe/${data.recording.id}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+          });
+        } catch (error) {
+          console.error('Error starting transcription:', error);
+          // 即使轉錄啟動失敗也繼續，不要中斷流程
+        }
+      }
+      
       // Show success toast
       toast({
         title: "錄音上傳成功",
-        description: "錄音檔案已上傳並開始處理",
+        description: "錄音檔案已上傳並開始自動轉錄",
       });
       
       // Invalidate recordings query to refresh list
