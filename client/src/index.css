@@ -95,3 +95,48 @@
 .animate-pulse-slow {
   animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Markdown styles */
+.markdown-renderer h1 {
+  @apply text-3xl font-bold text-gray-900 mt-8 mb-4;
+}
+
+.markdown-renderer h2 {
+  @apply text-2xl font-semibold text-gray-800 mt-6 mb-3;
+}
+
+.markdown-renderer h3 {
+  @apply text-xl font-semibold text-gray-800 mt-5 mb-2;
+}
+
+.markdown-renderer p {
+  @apply text-base leading-7 text-gray-600 mb-4;
+}
+
+.markdown-renderer ul {
+  @apply my-4 ml-6 list-disc;
+}
+
+.markdown-renderer ol {
+  @apply my-4 ml-6 list-decimal;
+}
+
+.markdown-renderer li {
+  @apply mt-1;
+}
+
+.markdown-renderer blockquote {
+  @apply mt-6 border-l-4 border-primary pl-4 italic text-gray-700;
+}
+
+.markdown-renderer a {
+  @apply text-primary underline hover:text-primary/80 transition-colors;
+}
+
+.markdown-renderer strong {
+  @apply font-semibold text-gray-900;
+}
+
+.markdown-renderer hr {
+  @apply my-6 border-gray-200;
+}

@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RecordingTitleEditor } from "@/components/RecordingTitleEditor";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -440,7 +441,12 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                 </div>
               ) : (
                 <ScrollArea className="h-[400px]">
-                  <div className="prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: notes.content.replace(/\n/g, '<br/>') }} />
+                  <div className="pr-4">
+                    <MarkdownRenderer 
+                      content={notes.content} 
+                      className="prose prose-slate max-w-none" 
+                    />
+                  </div>
                 </ScrollArea>
               )}
             </CardContent>
