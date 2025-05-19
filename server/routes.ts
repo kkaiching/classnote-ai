@@ -292,13 +292,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Transcript not found" });
       }
 
-      // Parse transcript with timestamps
+      // Parse transcript with timestamps for frontend display
       try {
         const { parsedTranscript } = await parseTranscriptWithTimestamps(transcript.content);
         res.json({ content: parsedTranscript });
       } catch (error) {
         console.error("Error parsing transcript:", error);
-        res.json({ content: transcript.content });
+        // 如果解析失敗，返回一個基本的結構化轉錄內容，以避免前端錯誤
+        res.json({ 
+          content: [{
+            timestamp: "00:00",
+            speaker: "講者",
+            text: transcript.content
+          }] 
+        });
       }
     } catch (error) {
       console.error("Error fetching transcript:", error);
