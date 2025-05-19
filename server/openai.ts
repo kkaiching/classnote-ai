@@ -4,11 +4,19 @@ import { AssemblyAI } from "assemblyai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const assemblyai = new AssemblyAI({ apiKey: process.env.ASSEMBLYAI_API_KEY });
+// Initialize AssemblyAI client with API key
+const assemblyai = new AssemblyAI({
+  apiKey: process.env.ASSEMBLYAI_API_KEY || ""  // Default to empty string if undefined
+});
 
 // Audio transcription using AssemblyAI
 export async function transcribeAudio(audioFilePath: string): Promise<{ text: string, duration: number }> {
   try {
+    // Check if the API key is available
+    if (!process.env.ASSEMBLYAI_API_KEY) {
+      throw new Error("AssemblyAI API key is not configured");
+    }
+    
     // Read the file content
     const fileBuffer = fs.readFileSync(audioFilePath);
     
@@ -17,7 +25,7 @@ export async function transcribeAudio(audioFilePath: string): Promise<{ text: st
     
     // Transcribe the audio file
     const transcript = await assemblyai.transcripts.transcribe({
-      audio: upload.id,
+      audio_url: upload.url,
       language_code: "zh-TW", // Traditional Chinese
     });
     
@@ -113,35 +121,55 @@ ${transcript}
 }
 
 // Parse transcript with timestamps
-export async function parseTranscriptWithTimestamps(transcript: string): Promise<{ parsedTranscript: string }> {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: `You are an expert at parsing raw transcripts into structured formats. 
-        Your task is to add timestamps and identify speakers in a transcript.
-        Format each segment with a timestamp at the beginning (in MM:SS format) and identify the speaker if possible.
-        If the speaker can't be identified, use "Speaker" as the default.
-        Generate a response in JSON format with a 'parsedTranscript' field containing the formatted transcript.`
-      },
-      {
-        role: "user",
-        content: `Please parse this raw transcript, adding timestamps approximately every 30 seconds and identifying speakers when possible:
-
-${transcript}`
-      }
-    ],
-    response_format: { type: "json_object" },
-  });
-
+export async function parseTranscriptWithTimestamps(transcript: string): Promise<{ parsedTranscript: Array<{ timestamp: string; speaker: string; text: string }> }> {
   try {
-    const parsedResponse = JSON.parse(response.choices[0].message.content || "{}");
-    return {
-      parsedTranscript: parsedResponse.parsedTranscript || transcript
-    };
+    // For AssemblyAI output, we need to parse the plain text and create a structured format
+    // that matches what the frontend expects
+    
+    // Since AssemblyAI doesn't provide speaker diarization by default in the basic implementation,
+    // we'll create our own structure with default speaker and divide text into segments
+
+    // Parse the transcript into segments (approximately every 30 seconds)
+    const segments: Array<{ timestamp: string; speaker: string; text: string }> = [];
+    
+    // Split the transcript into sentences or natural breaks
+    const lines = transcript.split(/(?<=[.!?])\s+/);
+    const totalLines = lines.length;
+    
+    if (totalLines === 0) {
+      return { parsedTranscript: [] };
+    }
+    
+    // Create segments with timestamps (approximately)
+    const segmentLength = Math.max(1, Math.ceil(totalLines / 10)); // Aim for about 10 segments
+    
+    for (let i = 0; i < totalLines; i += segmentLength) {
+      const segmentText = lines.slice(i, Math.min(i + segmentLength, totalLines)).join(' ');
+      
+      // Calculate an approximate timestamp based on position in the transcript
+      // Format as MM:SS
+      const minutes = Math.floor((i / totalLines) * 10); // Assuming ~10 minute audio
+      const seconds = Math.floor(((i / totalLines) * 10 % 1) * 60);
+      const timestamp = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      segments.push({
+        timestamp: timestamp,
+        speaker: "講者",
+        text: segmentText.trim()
+      });
+    }
+    
+    return { parsedTranscript: segments };
   } catch (error) {
     console.error("Error parsing transcript with timestamps:", error);
-    return { parsedTranscript: transcript };
+    
+    // Return a simple fallback with the entire transcript as one segment
+    return { 
+      parsedTranscript: [{
+        timestamp: "00:00",
+        speaker: "講者",
+        text: transcript
+      }]
+    };
   }
 }
