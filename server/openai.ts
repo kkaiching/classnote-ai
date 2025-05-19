@@ -1,22 +1,37 @@
 import OpenAI from "openai";
 import fs from "fs";
+import { AssemblyAI } from "assemblyai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const assemblyai = new AssemblyAI({ apiKey: process.env.ASSEMBLYAI_API_KEY });
 
-// Audio transcription 
+// Audio transcription using AssemblyAI
 export async function transcribeAudio(audioFilePath: string): Promise<{ text: string, duration: number }> {
-  const audioReadStream = fs.createReadStream(audioFilePath);
-
-  const transcription = await openai.audio.transcriptions.create({
-    file: audioReadStream,
-    model: "whisper-1",
-  });
-
-  return {
-    text: transcription.text,
-    duration: transcription.duration || 0,
-  };
+  try {
+    // Read the file content
+    const fileBuffer = fs.readFileSync(audioFilePath);
+    
+    // Upload the file to AssemblyAI
+    const upload = await assemblyai.files.upload(fileBuffer);
+    
+    // Transcribe the audio file
+    const transcript = await assemblyai.transcripts.transcribe({
+      audio: upload.id,
+      language_code: "zh-TW", // Traditional Chinese
+    });
+    
+    // Calculate duration in seconds (AssemblyAI returns it in milliseconds)
+    const durationInSeconds = transcript.audio_duration ? transcript.audio_duration / 1000 : 0;
+    
+    return {
+      text: transcript.text || "",
+      duration: durationInSeconds,
+    };
+  } catch (error) {
+    console.error("Error in AssemblyAI transcription:", error);
+    throw error;
+  }
 }
 
 // Generate notes from transcript
