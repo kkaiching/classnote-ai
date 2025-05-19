@@ -23,7 +23,7 @@ export async function transcribeAudio(audioFilePath: string): Promise<{ text: st
     // Use AssemblyAI to transcribe the audio file
     const transcript = await assemblyClient.transcripts.transcribe({
       audio: fileBuffer,
-      language_code: "zh-TW", // Traditional Chinese
+      language_code: "zh", // Chinese (using standard code instead of zh-TW)
     });
     
     // Extract duration (convert from milliseconds to seconds if needed)
