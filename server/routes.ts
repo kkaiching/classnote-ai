@@ -34,12 +34,26 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB max file size
   },
   fileFilter: (req, file, cb) => {
-    const allowedFormats = ['.mp3', '.m4a', '.wav', '.webm'];
+    // Handle common mobile recording formats and their mime types
+    const allowedMimeTypes = [
+      'audio/mpeg', 'audio/mp3', 'audio/mp4',
+      'audio/m4a', 'audio/x-m4a', 'audio/aac',
+      'audio/wav', 'audio/x-wav', 'audio/webm',
+      'audio/ogg', 'audio/oga', 'audio/flac',
+      'audio/x-aac', 'audio/x-caf', 'audio/3gpp',
+      'audio/3gpp2', 'audio/amr'
+    ];
+    
+    // Also check file extension as fallback
+    const allowedExtensions = ['.mp3', '.m4a', '.wav', '.webm', '.aac', '.ogg', '.flac', '.amr', '.3gp'];
     const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedFormats.includes(ext)) {
+    
+    // Accept file if either mime type or extension matches
+    if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file format. Only MP3, M4A, WAV, and WebM are supported.'));
+      console.log(`Rejected file: ${file.originalname} (${file.mimetype})`);
+      cb(new Error(`Invalid file format. Supported formats: MP3, M4A, WAV, WebM, AAC, OGG, FLAC, AMR, 3GP. Received: ${file.mimetype}`));
     }
   }
 });

@@ -6,17 +6,42 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Audio transcription 
 export async function transcribeAudio(audioFilePath: string): Promise<{ text: string, duration: number }> {
-  const audioReadStream = fs.createReadStream(audioFilePath);
+  try {
+    // Check the file exists
+    if (!fs.existsSync(audioFilePath)) {
+      throw new Error(`File does not exist: ${audioFilePath}`);
+    }
+    
+    // Get file stats to check size
+    const stats = fs.statSync(audioFilePath);
+    if (stats.size === 0) {
+      throw new Error('Audio file is empty');
+    }
+    
+    // Create file stream for OpenAI API
+    const audioReadStream = fs.createReadStream(audioFilePath);
+    
+    // Log file info for debugging
+    console.log(`Transcribing file: ${audioFilePath}, size: ${stats.size} bytes`);
+    
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioReadStream,
+      model: "whisper-1",
+    });
 
-  const transcription = await openai.audio.transcriptions.create({
-    file: audioReadStream,
-    model: "whisper-1",
-  });
+    // Calculate approximate duration based on word count
+    // Average speaking rate is ~150 words per minute
+    const wordCount = transcription.text.split(/\s+/).length;
+    const approximateDuration = Math.max(wordCount / 2.5, 10); // At least 10 seconds
 
-  return {
-    text: transcription.text,
-    duration: transcription.duration || 0,
-  };
+    return {
+      text: transcription.text,
+      duration: approximateDuration,
+    };
+  } catch (error) {
+    console.error("Error transcribing audio:", error);
+    throw error;
+  }
 }
 
 // Generate notes from transcript
