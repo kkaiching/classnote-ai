@@ -4,6 +4,12 @@ import fs from "fs";
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+import { exec } from 'child_process';
+import path from 'path';
+import { promisify } from 'util';
+
+const execPromise = promisify(exec);
+
 // Audio transcription 
 export async function transcribeAudio(audioFilePath: string): Promise<{ text: string, duration: number }> {
   try {
@@ -18,26 +24,63 @@ export async function transcribeAudio(audioFilePath: string): Promise<{ text: st
       throw new Error('Audio file is empty');
     }
     
-    // Create file stream for OpenAI API
-    const audioReadStream = fs.createReadStream(audioFilePath);
-    
     // Log file info for debugging
     console.log(`Transcribing file: ${audioFilePath}, size: ${stats.size} bytes`);
     
-    const transcription = await openai.audio.transcriptions.create({
-      file: audioReadStream,
-      model: "whisper-1",
-    });
-
-    // Calculate approximate duration based on word count
-    // Average speaking rate is ~150 words per minute
-    const wordCount = transcription.text.split(/\s+/).length;
-    const approximateDuration = Math.max(wordCount / 2.5, 10); // At least 10 seconds
-
-    return {
-      text: transcription.text,
-      duration: approximateDuration,
-    };
+    // Convert to MP3 format which is widely supported by OpenAI
+    const fileExt = path.extname(audioFilePath);
+    const baseFilePath = audioFilePath.slice(0, -fileExt.length);
+    const mp3FilePath = `${baseFilePath}.mp3`;
+    
+    try {
+      console.log(`Converting ${fileExt} file to MP3 format...`);
+      await execPromise(`ffmpeg -i ${audioFilePath} -vn -ar 44100 -ac 2 -b:a 192k ${mp3FilePath}`);
+      console.log(`Conversion completed: ${mp3FilePath}`);
+      
+      // Get file stats for converted file
+      const mp3Stats = fs.statSync(mp3FilePath);
+      console.log(`Converted file size: ${mp3Stats.size} bytes`);
+      
+      // Create file stream for OpenAI API from the converted MP3
+      const audioReadStream = fs.createReadStream(mp3FilePath);
+      
+      const transcription = await openai.audio.transcriptions.create({
+        file: audioReadStream,
+        model: "whisper-1",
+      });
+      
+      // Clean up the converted file
+      fs.unlinkSync(mp3FilePath);
+      
+      // Calculate approximate duration based on word count
+      // Average speaking rate is ~150 words per minute
+      const wordCount = transcription.text.split(/\s+/).length;
+      const approximateDuration = Math.max(wordCount / 2.5, 10); // At least 10 seconds
+      
+      return {
+        text: transcription.text,
+        duration: approximateDuration,
+      };
+    } catch (conversionError) {
+      console.error("Error converting audio format:", conversionError);
+      
+      // If conversion fails, try direct upload as fallback
+      console.log("Attempting direct transcription without format conversion...");
+      const audioReadStream = fs.createReadStream(audioFilePath);
+      
+      const transcription = await openai.audio.transcriptions.create({
+        file: audioReadStream,
+        model: "whisper-1",
+      });
+      
+      const wordCount = transcription.text.split(/\s+/).length;
+      const approximateDuration = Math.max(wordCount / 2.5, 10);
+      
+      return {
+        text: transcription.text,
+        duration: approximateDuration,
+      };
+    }
   } catch (error) {
     console.error("Error transcribing audio:", error);
     throw error;
