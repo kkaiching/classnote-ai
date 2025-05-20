@@ -277,10 +277,22 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
             variant="outline"
             size="sm"
             className="flex items-center gap-1"
-            onClick={() => window.open(`/api/recordings/${recordingId}/download`, '_blank')}
+            onClick={() => {
+              const url = `${window.location.origin}/api/recordings/${recordingId}/download`;
+              if (navigator.share) {
+                navigator.share({
+                  title: `${recording.title} - 錄音`,
+                  url: url
+                }).catch(err => {
+                  window.location.href = url;
+                });
+              } else {
+                window.location.href = url;
+              }
+            }}
           >
-            <Download className="h-4 w-4" />
-            <span>下載</span>
+            <Share2 className="h-4 w-4" />
+            <span>分享</span>
           </Button>
         </div>
         <AudioPlayer 
@@ -307,10 +319,22 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-1"
-                  onClick={() => window.open(`/api/recordings/${recordingId}/transcript/download`, '_blank')}
+                  onClick={() => {
+                    const url = `${window.location.origin}/api/recordings/${recordingId}/transcript/download`;
+                    if (navigator.share) {
+                      navigator.share({
+                        title: `${recording.title} - 逐字稿`,
+                        url: url
+                      }).catch(err => {
+                        window.location.href = url;
+                      });
+                    } else {
+                      window.location.href = url;
+                    }
+                  }}
                 >
-                  <Download className="h-4 w-4" />
-                  <span>下載</span>
+                  <Share2 className="h-4 w-4" />
+                  <span>分享</span>
                 </Button>
                 <CopyButton
                   text={transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n')}
@@ -421,10 +445,22 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     variant="outline"
                     size="sm"
                     className="flex items-center gap-1"
-                    onClick={() => window.open(`/api/recordings/${recordingId}/notes/download`, '_blank')}
+                    onClick={() => {
+                      const url = `${window.location.origin}/api/recordings/${recordingId}/notes/download`;
+                      if (navigator.share) {
+                        navigator.share({
+                          title: `${recording.title} - AI筆記`,
+                          url: url
+                        }).catch(err => {
+                          window.location.href = url;
+                        });
+                      } else {
+                        window.location.href = url;
+                      }
+                    }}
                   >
-                    <Download className="h-4 w-4" />
-                    <span>下載</span>
+                    <Share2 className="h-4 w-4" />
+                    <span>分享</span>
                   </Button>
                   <CopyButton
                     text={notes.content}
