@@ -1,4 +1,5 @@
 import { recordings, transcripts, notes, type Recording, type InsertRecording, type Transcript, type InsertTranscript, type Note, type InsertNote, users, type User, type InsertUser } from "@shared/schema";
+import { createSheetsAdapter } from "./sheetsAdapter";
 
 // Storage interface
 export interface IStorage {
@@ -197,4 +198,29 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Create base memory storage
+export const memStorage = new MemStorage();
+
+// Export storage with dynamically injected Google Sheets capabilities
+export let storage: IStorage = memStorage;
+
+// Initialize storage with Google Sheets adapter when possible
+(async () => {
+  try {
+    const sheetsAdapter = await createSheetsAdapter();
+    
+    if (Object.keys(sheetsAdapter).length > 0) {
+      // Create a hybrid storage that uses Google Sheets for users and memory for everything else
+      storage = {
+        ...memStorage,
+        ...sheetsAdapter
+      };
+      console.log("Using Google Sheets for user authentication");
+    } else {
+      console.log("Using memory storage for all data (Google Sheets unavailable)");
+    }
+  } catch (error) {
+    console.error("Error setting up Google Sheets adapter:", error);
+    console.log("Falling back to memory storage for all data");
+  }
+})();

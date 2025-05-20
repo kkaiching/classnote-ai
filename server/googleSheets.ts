@@ -23,6 +23,9 @@ export async function getGoogleSheetsClient() {
     credentials: {
       client_email: process.env.GOOGLE_CLIENT_EMAIL,
       private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      // Add required JWT fields
+      type: "service_account",
+      project_id: "audio-transcription-note"
     },
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
