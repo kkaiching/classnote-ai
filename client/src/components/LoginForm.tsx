@@ -76,8 +76,8 @@ export function LoginForm() {
           
           // 密碼錯誤
           toast({
-            title: "登入失敗",
-            description: "請檢查帳號密碼是否正確",
+            title: "密碼錯誤",
+            description: "密碼錯誤，請再試一次",
             variant: "destructive",
           });
         } else {

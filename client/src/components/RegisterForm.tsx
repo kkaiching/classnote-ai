@@ -99,13 +99,16 @@ export function RegisterForm() {
         return;
       }
 
+      // 儲存使用者資訊於 localStorage
+      localStorage.setItem("user", JSON.stringify(data.user));
+      
       toast({
         title: "註冊成功",
-        description: "請立即登入您的帳號",
+        description: "歡迎回來！",
       });
 
-      // 註冊成功後導向登入頁，並自動填入剛才註冊的電子郵件
-      navigate(`/login?email=${encodeURIComponent(values.email)}`);
+      // 註冊成功後直接導向首頁
+      navigate("/");
 
     } catch (error) {
       console.error("Registration failed:", error);
