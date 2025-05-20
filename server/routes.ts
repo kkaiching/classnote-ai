@@ -5,7 +5,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
-import { insertRecordingSchema, insertTranscriptSchema, insertNoteSchema } from "@shared/schema";
+import { insertRecordingSchema, insertTranscriptSchema, insertNoteSchema, insertUserSchema, loginUserSchema } from "@shared/schema";
 import { transcribeAudio, generateNotes, parseTranscriptWithTimestamps } from "./openai";
 import { fileURLToPath } from "url";
 
@@ -58,7 +58,112 @@ const upload = multer({
   }
 });
 
+// Add simple authentication middleware
+const authMiddleware = async (req: Request, res: Response, next: any) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: "未授權的請求" });
+  }
+  
+  const userId = parseInt(authHeader.split(' ')[1], 10);
+  
+  try {
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(401).json({ success: false, message: "無效的使用者" });
+    }
+    
+    // Attach user to request
+    (req as any).user = user;
+    next();
+  } catch (error) {
+    console.error("Auth error:", error);
+    return res.status(500).json({ success: false, message: "身份驗證時發生錯誤" });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register a new user
+  app.post("/api/auth/register", async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const validationResult = insertUserSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "無效的註冊資料", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(409).json({ success: false, message: "使用者名稱已存在" });
+      }
+
+      // Create new user
+      const newUser = await storage.createUser(req.body);
+      
+      // Return user data without password
+      const { password, ...userData } = newUser;
+      res.status(201).json({ success: true, user: userData });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ success: false, message: "註冊時發生錯誤" });
+    }
+  });
+
+  // Login
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const validationResult = loginUserSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "無效的登入資料", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      // Check if user exists
+      const user = await storage.getUserByUsername(req.body.username);
+      if (!user) {
+        return res.status(401).json({ success: false, message: "無效的用戶名或密碼" });
+      }
+
+      // Verify password (in a real app, you would use a proper password hashing mechanism)
+      if (user.password !== req.body.password) {
+        return res.status(401).json({ success: false, message: "無效的用戶名或密碼" });
+      }
+
+      // Return user data without password
+      const { password, ...userData } = user;
+      res.status(200).json({ 
+        success: true, 
+        user: userData,
+        token: user.id.toString() // Simple token, in a real app use JWT
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ success: false, message: "登入時發生錯誤" });
+    }
+  });
+
+  // Get current user
+  app.get("/api/auth/user", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      // Return user data without password
+      const { password, ...userData } = user;
+      res.status(200).json(userData);
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ success: false, message: "獲取用戶資料時發生錯誤" });
+    }
+  });
   // Get all recordings
   app.get("/api/recordings", async (req: Request, res: Response) => {
     try {
