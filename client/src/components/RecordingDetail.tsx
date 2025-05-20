@@ -278,15 +278,40 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
             size="sm"
             className="flex items-center gap-1"
             onClick={() => {
+              const fileExt = recording.filename.split('.').pop() || 'audio';
               const url = `${window.location.origin}/api/recordings/${recordingId}/download`;
-              if (navigator.share) {
-                navigator.share({
-                  title: `${recording.title} - 錄音`,
-                  url: url
-                }).catch(err => {
-                  window.location.href = url;
-                });
+              
+              if (navigator.share && navigator.canShare) {
+                // 使用 fetch 先下載檔案內容
+                fetch(url)
+                  .then(response => response.blob())
+                  .then(blob => {
+                    const file = new File(
+                      [blob], 
+                      `${recording.title}.${fileExt}`, 
+                      { type: blob.type }
+                    );
+                    
+                    // 檢查是否可以分享此檔案
+                    if (navigator.canShare({ files: [file] })) {
+                      navigator.share({
+                        title: `${recording.title} - 錄音`,
+                        files: [file]
+                      }).catch(err => {
+                        // 分享失敗時回退到直接下載
+                        window.location.href = url;
+                      });
+                    } else {
+                      // 不支援檔案分享時直接下載
+                      window.location.href = url;
+                    }
+                  })
+                  .catch(err => {
+                    // 發生錯誤時直接下載
+                    window.location.href = url;
+                  });
               } else {
+                // 不支援分享API時直接下載
                 window.location.href = url;
               }
             }}
@@ -321,14 +346,38 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                   className="flex items-center gap-1"
                   onClick={() => {
                     const url = `${window.location.origin}/api/recordings/${recordingId}/transcript/download`;
-                    if (navigator.share) {
-                      navigator.share({
-                        title: `${recording.title} - 逐字稿`,
-                        url: url
-                      }).catch(err => {
-                        window.location.href = url;
-                      });
+                    
+                    if (navigator.share && navigator.canShare) {
+                      // 使用 fetch 先下載檔案內容
+                      fetch(url)
+                        .then(response => response.blob())
+                        .then(blob => {
+                          const file = new File(
+                            [blob], 
+                            `${recording.title}_transcript.txt`, 
+                            { type: 'text/plain' }
+                          );
+                          
+                          // 檢查是否可以分享此檔案
+                          if (navigator.canShare({ files: [file] })) {
+                            navigator.share({
+                              title: `${recording.title} - 逐字稿`,
+                              files: [file]
+                            }).catch(err => {
+                              // 分享失敗時回退到直接下載
+                              window.location.href = url;
+                            });
+                          } else {
+                            // 不支援檔案分享時直接下載
+                            window.location.href = url;
+                          }
+                        })
+                        .catch(err => {
+                          // 發生錯誤時直接下載
+                          window.location.href = url;
+                        });
                     } else {
+                      // 不支援分享API時直接下載
                       window.location.href = url;
                     }
                   }}
@@ -447,14 +496,38 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     className="flex items-center gap-1"
                     onClick={() => {
                       const url = `${window.location.origin}/api/recordings/${recordingId}/notes/download`;
-                      if (navigator.share) {
-                        navigator.share({
-                          title: `${recording.title} - AI筆記`,
-                          url: url
-                        }).catch(err => {
-                          window.location.href = url;
-                        });
+                      
+                      if (navigator.share && navigator.canShare) {
+                        // 使用 fetch 先下載檔案內容
+                        fetch(url)
+                          .then(response => response.blob())
+                          .then(blob => {
+                            const file = new File(
+                              [blob], 
+                              `${recording.title}_notes.txt`, 
+                              { type: 'text/plain' }
+                            );
+                            
+                            // 檢查是否可以分享此檔案
+                            if (navigator.canShare({ files: [file] })) {
+                              navigator.share({
+                                title: `${recording.title} - AI筆記`,
+                                files: [file]
+                              }).catch(err => {
+                                // 分享失敗時回退到直接下載
+                                window.location.href = url;
+                              });
+                            } else {
+                              // 不支援檔案分享時直接下載
+                              window.location.href = url;
+                            }
+                          })
+                          .catch(err => {
+                            // 發生錯誤時直接下載
+                            window.location.href = url;
+                          });
                       } else {
+                        // 不支援分享API時直接下載
                         window.location.href = url;
                       }
                     }}
