@@ -281,37 +281,49 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
               const fileExt = recording.filename.split('.').pop() || 'audio';
               const url = `${window.location.origin}/api/recordings/${recordingId}/download`;
               
-              if (navigator.share && navigator.canShare) {
-                // 使用 fetch 先下載檔案內容
-                fetch(url)
-                  .then(response => response.blob())
-                  .then(blob => {
-                    const file = new File(
-                      [blob], 
-                      `${recording.title}.${fileExt}`, 
-                      { type: blob.type }
-                    );
-                    
-                    // 檢查是否可以分享此檔案
-                    if (navigator.canShare({ files: [file] })) {
-                      navigator.share({
-                        title: `${recording.title} - 錄音`,
-                        files: [file]
-                      }).catch(err => {
-                        // 只有在非使用者取消的情況下才執行下載
-                        if (err.name !== 'AbortError') {
+              if (navigator.share) {
+                // 先嘗試使用URL分享 (macOS分享表單)
+                navigator.share({
+                  title: `${recording.title} - 錄音`,
+                  url: url
+                }).catch(err => {
+                  // 如果URL分享失敗，再嘗試檔案分享
+                  if (err.name !== 'AbortError' && navigator.canShare) {
+                    // 使用 fetch 先下載檔案內容
+                    fetch(url)
+                      .then(response => response.blob())
+                      .then(blob => {
+                        const file = new File(
+                          [blob], 
+                          `${recording.title}.${fileExt}`, 
+                          { type: blob.type }
+                        );
+                        
+                        // 檢查是否可以分享此檔案
+                        if (navigator.canShare({ files: [file] })) {
+                          navigator.share({
+                            title: `${recording.title} - 錄音`,
+                            files: [file]
+                          }).catch(err => {
+                            // 只有在非使用者取消的情況下才執行下載
+                            if (err.name !== 'AbortError') {
+                              window.location.href = url;
+                            }
+                          });
+                        } else {
+                          // 不支援檔案分享時直接下載
                           window.location.href = url;
                         }
+                      })
+                      .catch(err => {
+                        // 發生錯誤時直接下載
+                        window.location.href = url;
                       });
-                    } else {
-                      // 不支援檔案分享時直接下載
-                      window.location.href = url;
-                    }
-                  })
-                  .catch(err => {
-                    // 發生錯誤時直接下載
+                  } else if (err.name !== 'AbortError') {
+                    // 其他錯誤時直接下載
                     window.location.href = url;
-                  });
+                  }
+                });
               } else {
                 // 不支援分享API時直接下載
                 window.location.href = url;
@@ -349,37 +361,49 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                   onClick={() => {
                     const url = `${window.location.origin}/api/recordings/${recordingId}/transcript/download`;
                     
-                    if (navigator.share && navigator.canShare) {
-                      // 使用 fetch 先下載檔案內容
-                      fetch(url)
-                        .then(response => response.blob())
-                        .then(blob => {
-                          const file = new File(
-                            [blob], 
-                            `${recording.title}_transcript.txt`, 
-                            { type: 'text/plain' }
-                          );
-                          
-                          // 檢查是否可以分享此檔案
-                          if (navigator.canShare({ files: [file] })) {
-                            navigator.share({
-                              title: `${recording.title} - 逐字稿`,
-                              files: [file]
-                            }).catch(err => {
-                              // 只有在非使用者取消的情況下才執行下載
-                              if (err.name !== 'AbortError') {
+                    if (navigator.share) {
+                      // 先嘗試使用URL分享 (macOS分享表單)
+                      navigator.share({
+                        title: `${recording.title} - 逐字稿`,
+                        url: url
+                      }).catch(err => {
+                        // 如果URL分享失敗，再嘗試檔案分享
+                        if (err.name !== 'AbortError' && navigator.canShare) {
+                          // 使用 fetch 先下載檔案內容
+                          fetch(url)
+                            .then(response => response.blob())
+                            .then(blob => {
+                              const file = new File(
+                                [blob], 
+                                `${recording.title}_transcript.txt`, 
+                                { type: 'text/plain' }
+                              );
+                              
+                              // 檢查是否可以分享此檔案
+                              if (navigator.canShare({ files: [file] })) {
+                                navigator.share({
+                                  title: `${recording.title} - 逐字稿`,
+                                  files: [file]
+                                }).catch(err => {
+                                  // 只有在非使用者取消的情況下才執行下載
+                                  if (err.name !== 'AbortError') {
+                                    window.location.href = url;
+                                  }
+                                });
+                              } else {
+                                // 不支援檔案分享時直接下載
                                 window.location.href = url;
                               }
+                            })
+                            .catch(err => {
+                              // 發生錯誤時直接下載
+                              window.location.href = url;
                             });
-                          } else {
-                            // 不支援檔案分享時直接下載
-                            window.location.href = url;
-                          }
-                        })
-                        .catch(err => {
-                          // 發生錯誤時直接下載
+                        } else if (err.name !== 'AbortError') {
+                          // 其他錯誤時直接下載
                           window.location.href = url;
-                        });
+                        }
+                      });
                     } else {
                       // 不支援分享API時直接下載
                       window.location.href = url;
@@ -501,37 +525,49 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     onClick={() => {
                       const url = `${window.location.origin}/api/recordings/${recordingId}/notes/download`;
                       
-                      if (navigator.share && navigator.canShare) {
-                        // 使用 fetch 先下載檔案內容
-                        fetch(url)
-                          .then(response => response.blob())
-                          .then(blob => {
-                            const file = new File(
-                              [blob], 
-                              `${recording.title}_notes.txt`, 
-                              { type: 'text/plain' }
-                            );
-                            
-                            // 檢查是否可以分享此檔案
-                            if (navigator.canShare({ files: [file] })) {
-                              navigator.share({
-                                title: `${recording.title} - AI筆記`,
-                                files: [file]
-                              }).catch(err => {
-                                // 只有在非使用者取消的情況下才執行下載
-                                if (err.name !== 'AbortError') {
+                      if (navigator.share) {
+                        // 先嘗試使用URL分享 (macOS分享表單)
+                        navigator.share({
+                          title: `${recording.title} - AI筆記`,
+                          url: url
+                        }).catch(err => {
+                          // 如果URL分享失敗，再嘗試檔案分享
+                          if (err.name !== 'AbortError' && navigator.canShare) {
+                            // 使用 fetch 先下載檔案內容
+                            fetch(url)
+                              .then(response => response.blob())
+                              .then(blob => {
+                                const file = new File(
+                                  [blob], 
+                                  `${recording.title}_notes.txt`, 
+                                  { type: 'text/plain' }
+                                );
+                                
+                                // 檢查是否可以分享此檔案
+                                if (navigator.canShare({ files: [file] })) {
+                                  navigator.share({
+                                    title: `${recording.title} - AI筆記`,
+                                    files: [file]
+                                  }).catch(err => {
+                                    // 只有在非使用者取消的情況下才執行下載
+                                    if (err.name !== 'AbortError') {
+                                      window.location.href = url;
+                                    }
+                                  });
+                                } else {
+                                  // 不支援檔案分享時直接下載
                                   window.location.href = url;
                                 }
+                              })
+                              .catch(err => {
+                                // 發生錯誤時直接下載
+                                window.location.href = url;
                               });
-                            } else {
-                              // 不支援檔案分享時直接下載
-                              window.location.href = url;
-                            }
-                          })
-                          .catch(err => {
-                            // 發生錯誤時直接下載
+                          } else if (err.name !== 'AbortError') {
+                            // 其他錯誤時直接下載
                             window.location.href = url;
-                          });
+                          }
+                        });
                       } else {
                         // 不支援分享API時直接下載
                         window.location.href = url;
