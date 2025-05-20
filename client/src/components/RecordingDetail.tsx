@@ -34,6 +34,9 @@ interface RecordingDetailProps {
   recordingId: number;
 }
 
+// 方法需移到 RecordingDetail 內部 
+// 暫時留空，方法會重新實作在 component 內
+
 export function RecordingDetail({ recordingId }: RecordingDetailProps) {
   const [activeTab, setActiveTab] = useState("transcript");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -42,6 +45,17 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
+  
+  // 輔助函數：觸發檔案下載並指定檔名
+  const triggerDownload = (url: string, filename: string) => {
+    // 建立一個隱藏的 a 元素來觸發下載
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename; // 指定下載時的檔名
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   // Fetch recording details
   const { 
@@ -281,8 +295,11 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
               const fileExt = recording.filename.split('.').pop() || 'audio';
               const url = `${window.location.origin}/api/recordings/${recordingId}/download`;
               
-              if (navigator.share && navigator.canShare) {
-                // 使用 fetch 先下載檔案內容
+              // 檢測是否為行動裝置
+              const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+              
+              if (isMobile && navigator.share && navigator.canShare) {
+                // 行動裝置使用 Web Share API
                 fetch(url)
                   .then(response => response.blob())
                   .then(blob => {
@@ -305,16 +322,16 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                       });
                     } else {
                       // 不支援檔案分享時直接下載
-                      window.location.href = url;
+                      triggerDownload(url, `${recording.title}.${fileExt}`);
                     }
                   })
                   .catch(err => {
                     // 發生錯誤時直接下載
-                    window.location.href = url;
+                    triggerDownload(url, `${recording.title}.${fileExt}`);
                   });
               } else {
-                // 不支援分享API時直接下載
-                window.location.href = url;
+                // 桌面版直接觸發下載並指定檔名
+                triggerDownload(url, `${recording.title}.${fileExt}`);
               }
             }}
           >
@@ -348,15 +365,19 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                   className="flex items-center gap-1"
                   onClick={() => {
                     const url = `${window.location.origin}/api/recordings/${recordingId}/transcript/download`;
+                    const filename = `${recording.title}_transcript.txt`;
                     
-                    if (navigator.share && navigator.canShare) {
-                      // 使用 fetch 先下載檔案內容
+                    // 檢測是否為行動裝置
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    
+                    if (isMobile && navigator.share && navigator.canShare) {
+                      // 行動裝置使用 Web Share API
                       fetch(url)
                         .then(response => response.blob())
                         .then(blob => {
                           const file = new File(
                             [blob], 
-                            `${recording.title}_transcript.txt`, 
+                            filename, 
                             { type: 'text/plain' }
                           );
                           
@@ -368,21 +389,21 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                             }).catch(err => {
                               // 只有在非使用者取消的情況下才執行下載
                               if (err.name !== 'AbortError') {
-                                window.location.href = url;
+                                triggerDownload(url, filename);
                               }
                             });
                           } else {
                             // 不支援檔案分享時直接下載
-                            window.location.href = url;
+                            triggerDownload(url, filename);
                           }
                         })
                         .catch(err => {
                           // 發生錯誤時直接下載
-                          window.location.href = url;
+                          triggerDownload(url, filename);
                         });
                     } else {
-                      // 不支援分享API時直接下載
-                      window.location.href = url;
+                      // 桌面版直接觸發下載並指定檔名
+                      triggerDownload(url, filename);
                     }
                   }}
                 >
@@ -500,15 +521,19 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     className="flex items-center gap-1"
                     onClick={() => {
                       const url = `${window.location.origin}/api/recordings/${recordingId}/notes/download`;
+                      const filename = `${recording.title}_notes.txt`;
                       
-                      if (navigator.share && navigator.canShare) {
-                        // 使用 fetch 先下載檔案內容
+                      // 檢測是否為行動裝置
+                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                      
+                      if (isMobile && navigator.share && navigator.canShare) {
+                        // 行動裝置使用 Web Share API
                         fetch(url)
                           .then(response => response.blob())
                           .then(blob => {
                             const file = new File(
                               [blob], 
-                              `${recording.title}_notes.txt`, 
+                              filename, 
                               { type: 'text/plain' }
                             );
                             
@@ -520,21 +545,21 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                               }).catch(err => {
                                 // 只有在非使用者取消的情況下才執行下載
                                 if (err.name !== 'AbortError') {
-                                  window.location.href = url;
+                                  triggerDownload(url, filename);
                                 }
                               });
                             } else {
                               // 不支援檔案分享時直接下載
-                              window.location.href = url;
+                              triggerDownload(url, filename);
                             }
                           })
                           .catch(err => {
                             // 發生錯誤時直接下載
-                            window.location.href = url;
+                            triggerDownload(url, filename);
                           });
                       } else {
-                        // 不支援分享API時直接下載
-                        window.location.href = url;
+                        // 桌面版直接觸發下載並指定檔名
+                        triggerDownload(url, filename);
                       }
                     }}
                   >
