@@ -298,8 +298,10 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                         title: `${recording.title} - 錄音`,
                         files: [file]
                       }).catch(err => {
-                        // 分享失敗時回退到直接下載
-                        window.location.href = url;
+                        // 只有在非使用者取消的情況下才執行下載
+                        if (err.name !== 'AbortError') {
+                          window.location.href = url;
+                        }
                       });
                     } else {
                       // 不支援檔案分享時直接下載
@@ -364,8 +366,10 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                               title: `${recording.title} - 逐字稿`,
                               files: [file]
                             }).catch(err => {
-                              // 分享失敗時回退到直接下載
-                              window.location.href = url;
+                              // 只有在非使用者取消的情況下才執行下載
+                              if (err.name !== 'AbortError') {
+                                window.location.href = url;
+                              }
                             });
                           } else {
                             // 不支援檔案分享時直接下載
@@ -514,8 +518,10 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                                 title: `${recording.title} - AI筆記`,
                                 files: [file]
                               }).catch(err => {
-                                // 分享失敗時回退到直接下載
-                                window.location.href = url;
+                                // 只有在非使用者取消的情況下才執行下載
+                                if (err.name !== 'AbortError') {
+                                  window.location.href = url;
+                                }
                               });
                             } else {
                               // 不支援檔案分享時直接下載
