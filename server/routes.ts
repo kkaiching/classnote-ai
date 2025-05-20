@@ -155,6 +155,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       message: "未登入" 
     });
   });
+  
+  // Check if email exists
+  app.get("/api/user/check-email", async (req: Request, res: Response) => {
+    try {
+      const email = req.query.email as string;
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "必須提供電子郵件"
+        });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      
+      res.json({
+        success: true,
+        exists: !!user
+      });
+    } catch (error) {
+      console.error("Error checking email:", error);
+      res.status(500).json({
+        success: false,
+        message: "檢查電子郵件時發生錯誤"
+      });
+    }
+  });
 
   // Get all recordings
   app.get("/api/recordings", async (req: Request, res: Response) => {
