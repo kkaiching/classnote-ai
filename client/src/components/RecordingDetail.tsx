@@ -284,7 +284,7 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
               if (navigator.share) {
                 // 先嘗試使用URL分享 (macOS分享表單)
                 navigator.share({
-                  title: `${recording.title} - 錄音`,
+                  title: `${recording.title}`,
                   url: url
                 }).catch(err => {
                   // 如果URL分享失敗，再嘗試檔案分享
@@ -293,16 +293,17 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     fetch(url)
                       .then(response => response.blob())
                       .then(blob => {
+                        // Always use .m4a for audio files as requested
                         const file = new File(
                           [blob], 
-                          `${recording.title}.${fileExt}`, 
+                          `${recording.title}.m4a`, 
                           { type: blob.type }
                         );
                         
                         // 檢查是否可以分享此檔案
                         if (navigator.canShare({ files: [file] })) {
                           navigator.share({
-                            title: `${recording.title} - 錄音`,
+                            title: `${recording.title}`,
                             files: [file]
                           }).catch(err => {
                             // 只有在非使用者取消的情況下才執行下載
@@ -382,7 +383,7 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                               // 檢查是否可以分享此檔案
                               if (navigator.canShare({ files: [file] })) {
                                 navigator.share({
-                                  title: `${recording.title} - 逐字稿`,
+                                  title: `${recording.title}`,
                                   files: [file]
                                 }).catch(err => {
                                   // 只有在非使用者取消的情況下才執行下載
@@ -539,14 +540,14 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                               .then(blob => {
                                 const file = new File(
                                   [blob], 
-                                  `${recording.title}_notes.txt`, 
+                                  `${recording.title}_note.txt`, 
                                   { type: 'text/plain' }
                                 );
                                 
                                 // 檢查是否可以分享此檔案
                                 if (navigator.canShare({ files: [file] })) {
                                   navigator.share({
-                                    title: `${recording.title} - AI筆記`,
+                                    title: `${recording.title}`,
                                     files: [file]
                                   }).catch(err => {
                                     // 只有在非使用者取消的情況下才執行下載
