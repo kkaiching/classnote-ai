@@ -278,18 +278,17 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
             size="sm"
             className="flex items-center gap-1"
             onClick={() => {
-              // 簡化分享功能，優先使用直接下載方式，避免404錯誤
-              const fileExt = recording.filename.split('.').pop() || 'audio';
-              const fileName = `${recording.title}.${fileExt}`;
+              // 分享錄音檔 (m4a格式)
               const url = `/api/recordings/${recordingId}/download`;
-
+              const fileName = `${recording.title}.m4a`;
+              
               try {
                 // 檢查是否支援Web Share API並且可以分享文字
                 if (navigator.share) {
                   // 只分享標題和訊息，不嘗試分享檔案以避免錯誤
                   navigator.share({
                     title: `${recording.title} - 錄音`,
-                    text: `收聽錄音: ${recording.title}`
+                    text: `收聽錄音: ${recording.title} (m4a格式)`
                   }).catch(() => {
                     // 如果分享失敗，回退到直接下載
                     window.location.href = url;
@@ -333,8 +332,9 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                   size="sm"
                   className="flex items-center gap-1"
                   onClick={() => {
-                    // 簡化分享功能，使用更簡單的方法避免404錯誤
+                    // 分享逐字稿 (txt格式)
                     const url = `/api/recordings/${recordingId}/transcript/download`;
+                    const fileName = `${recording.title}-transcript.txt`;
                     
                     try {
                       // 檢查是否支援Web Share API
@@ -342,7 +342,7 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                         // 只分享標題和訊息，不嘗試分享檔案以避免錯誤
                         navigator.share({
                           title: `${recording.title} - 逐字稿`,
-                          text: transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n').substring(0, 100) + '...'
+                          text: transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n').substring(0, 100) + '... (txt格式)'
                         }).catch(() => {
                           // 如果分享失敗，回退到直接下載
                           window.location.href = url;
@@ -470,8 +470,9 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     size="sm"
                     className="flex items-center gap-1"
                     onClick={() => {
-                      // 簡化分享功能，使用更簡單的方法避免404錯誤
+                      // 分享 AI 筆記 (txt格式)
                       const url = `/api/recordings/${recordingId}/notes/download`;
+                      const fileName = `${recording.title}-notes.txt`;
                       
                       try {
                         // 檢查是否支援Web Share API
@@ -479,7 +480,7 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                           // 只分享標題和訊息，不嘗試分享檔案以避免錯誤
                           navigator.share({
                             title: `${recording.title} - AI筆記`,
-                            text: notes.content.substring(0, 100) + '...'
+                            text: notes.content.substring(0, 100) + '... (txt格式)'
                           }).catch(() => {
                             // 如果分享失敗，回退到直接下載
                             window.location.href = url;
