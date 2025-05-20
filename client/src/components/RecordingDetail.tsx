@@ -509,15 +509,6 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => generateNotesMutation.mutate()}
-                    disabled={generateNotesMutation.isPending || !canGenerateNotes}
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${generateNotesMutation.isPending ? 'animate-spin' : ''}`} />
-                    重新生成
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
                     className="flex items-center gap-1"
                     onClick={() => {
                       const url = `${window.location.origin}/api/recordings/${recordingId}/notes/download`;
