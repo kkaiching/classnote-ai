@@ -75,8 +75,10 @@ export function LoginForm() {
         description: '歡迎回來！',
       });
       
-      // 導航至首頁
-      window.location.href = '/';
+      // 導航至首頁（使用延遲確保 toast 訊息能被看到）
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     },
     onError: (error: Error) => {
       toast({
