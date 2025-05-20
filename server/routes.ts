@@ -420,6 +420,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile(filePath);
   });
 
+  // Download audio file with custom filename
+  app.get("/api/recordings/:id/download", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid recording ID" });
+      }
+      
+      const recording = await storage.getRecording(id);
+      if (!recording) {
+        return res.status(404).json({ message: "Recording not found" });
+      }
+      
+      const filePath = path.join(uploadsDir, recording.filename);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: "Audio file not found" });
+      }
+      
+      // Determine file extension from the original filename
+      const fileExt = path.extname(recording.filename);
+      // Safe filename for download
+      const safeTitle = recording.title.replace(/[^a-z0-9]/gi, '_');
+      const downloadFilename = `${safeTitle}${fileExt}`;
+      
+      res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+      res.sendFile(filePath);
+    } catch (error) {
+      console.error("Error downloading recording:", error);
+      res.status(500).json({ message: "Failed to download recording" });
+    }
+  });
+  
+  // Download transcript as text file
+  app.get("/api/recordings/:id/transcript/download", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid recording ID" });
+      }
+      
+      const recording = await storage.getRecording(id);
+      if (!recording) {
+        return res.status(404).json({ message: "Recording not found" });
+      }
+      
+      const transcript = await storage.getTranscriptByRecordingId(id);
+      if (!transcript) {
+        return res.status(404).json({ message: "Transcript not found" });
+      }
+      
+      // Safe filename for download
+      const safeTitle = recording.title.replace(/[^a-z0-9]/gi, '_');
+      const downloadFilename = `${safeTitle}_transcript.txt`;
+      
+      // Format transcript content
+      let formattedContent = transcript.content;
+      
+      try {
+        // Check if content is JSON string
+        if (typeof transcript.content === 'string' && (
+            transcript.content.startsWith('[') || 
+            transcript.content.startsWith('{')
+        )) {
+          const parsedContent = JSON.parse(transcript.content);
+          if (Array.isArray(parsedContent)) {
+            formattedContent = parsedContent
+              .map((item: any) => `${item.timestamp || ''} ${item.speaker || ''}：${item.text || ''}`)
+              .join('\n');
+          }
+        }
+      } catch (e) {
+        console.log("Error parsing transcript content, using as is:", e);
+      }
+      
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+      res.send(formattedContent);
+    } catch (error) {
+      console.error("Error downloading transcript:", error);
+      res.status(500).json({ message: "Failed to download transcript" });
+    }
+  });
+  
+  // Download notes as text file
+  app.get("/api/recordings/:id/notes/download", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid recording ID" });
+      }
+      
+      const recording = await storage.getRecording(id);
+      if (!recording) {
+        return res.status(404).json({ message: "Recording not found" });
+      }
+      
+      const note = await storage.getNoteByRecordingId(id);
+      if (!note) {
+        return res.status(404).json({ message: "Notes not found" });
+      }
+      
+      // Safe filename for download
+      const safeTitle = recording.title.replace(/[^a-z0-9]/gi, '_');
+      const downloadFilename = `${safeTitle}_notes.txt`;
+      
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+      res.send(note.content);
+    } catch (error) {
+      console.error("Error downloading notes:", error);
+      res.status(500).json({ message: "Failed to download notes" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

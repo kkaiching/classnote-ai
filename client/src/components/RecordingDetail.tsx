@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { 
   ArrowLeft, Clock, Calendar, FileAudio, RefreshCw, 
-  Trash2, AlertTriangle 
+  Trash2, AlertTriangle, Share2, Download, SendHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -271,6 +271,18 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
 
       {/* Audio Player */}
       <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-semibold text-gray-800">錄音檔</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => window.open(`/api/recordings/${recordingId}/download`, '_blank')}
+          >
+            <Download className="h-4 w-4" />
+            <span>下載</span>
+          </Button>
+        </div>
         <AudioPlayer 
           src={`/api/audio/${recording.filename}`}
           onTimeUpdate={setCurrentTime}
@@ -290,11 +302,22 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">詳細逐字稿</h2>
             {transcript?.content && transcript.content.length > 0 && (
-              <CopyButton
-                text={transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n')}
-                label="複製全文"
-                successMessage="逐字稿已複製到剪貼簿"
-              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={() => window.open(`/api/recordings/${recordingId}/transcript/download`, '_blank')}
+                >
+                  <Download className="h-4 w-4" />
+                  <span>下載</span>
+                </Button>
+                <CopyButton
+                  text={transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n')}
+                  label="複製全文"
+                  successMessage="逐字稿已複製到剪貼簿"
+                />
+              </div>
             )}
           </div>
           
@@ -393,6 +416,15 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                   >
                     <RefreshCw className={`h-4 w-4 mr-2 ${generateNotesMutation.isPending ? 'animate-spin' : ''}`} />
                     重新生成
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={() => window.open(`/api/recordings/${recordingId}/notes/download`, '_blank')}
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>下載</span>
                   </Button>
                   <CopyButton
                     text={notes.content}
