@@ -41,34 +41,8 @@ interface AuthContextType {
   logout: () => void;
 }
 
-// 這裡我們模擬一個 AuthContext 屬性，實際應用中應該在上層組件提供 AuthContext
-const useAuth = (): AuthContextType => {
-  // 檢查 localStorage 是否有 token
-  const hasToken = localStorage.getItem('auth_token') !== null;
-  
-  // 從 localStorage 讀取 user 資料
-  const userStr = localStorage.getItem('user_data');
-  const user = userStr ? JSON.parse(userStr) : null;
-  
-  const login = (token: string, userData: any) => {
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user_data', JSON.stringify(userData));
-    window.location.href = '/'; // 登入後重導向至首頁
-  };
-  
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    window.location.href = '/login'; // 登出後重導向至登入頁
-  };
-  
-  return {
-    isAuthenticated: hasToken,
-    user,
-    login,
-    logout
-  };
-};
+// 使用實際的 AuthContext
+import { useAuth } from '@/contexts/AuthContext';
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
