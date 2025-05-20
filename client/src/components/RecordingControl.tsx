@@ -41,12 +41,27 @@ export function RecordingControl() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      // Use AAC codec for better m4a recording compatibility
-      const options = { mimeType: 'audio/mp4;codecs=mp4a.40.2' };
-      // Fallback to default if the browser doesn't support the specified mimeType
-      const mediaRecorder = options.mimeType && MediaRecorder.isTypeSupported(options.mimeType)
-        ? new MediaRecorder(stream, options)
-        : new MediaRecorder(stream);
+      // 嘗試使用 MP3 格式，如果不支援則使用其他相容性高的格式
+      const mimeTypes = [
+        'audio/mp3',
+        'audio/mpeg',
+        'audio/mp4',
+        'audio/aac',
+        'audio/webm;codecs=opus',
+        'audio/wav'
+      ];
+      
+      // 找到瀏覽器支援的第一個 MIME 類型
+      let mimeType = 'audio/webm'; // 預設
+      for (const type of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          console.log(`使用錄音格式: ${mimeType}`);
+          break;
+        }
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       
       mediaRecorder.ondataavailable = (event) => {
@@ -172,14 +187,30 @@ export function RecordingControl() {
     setIsUploading(true);
     
     try {
+      // 從 mediaRecorder 獲取 MIME 類型
+      let mimeType = 'audio/mp3';
+      if (mediaRecorderRef.current && mediaRecorderRef.current.mimeType) {
+        mimeType = mediaRecorderRef.current.mimeType;
+      }
+      
+      // 根據 MIME 類型決定檔案擴展名
+      let fileExtension = '.mp3';
+      if (mimeType.includes('webm')) {
+        fileExtension = '.webm';
+      } else if (mimeType.includes('mp4') || mimeType.includes('aac')) {
+        fileExtension = '.m4a';
+      } else if (mimeType.includes('wav')) {
+        fileExtension = '.wav';
+      }
+      
       // Create a blob with the recorded chunks
-      const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/m4a' });
+      const audioBlob = new Blob(recordedChunksRef.current, { type: mimeType });
       
       // Create a filename with current date and time
       const now = new Date();
       const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
       const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
-      const filename = `${dateStr}-${timeStr}.m4a`;
+      const filename = `${dateStr}-${timeStr}${fileExtension}`;
       
       // Create FormData
       const formData = new FormData();
