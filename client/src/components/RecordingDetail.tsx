@@ -3,13 +3,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { 
   ArrowLeft, Clock, Calendar, FileAudio, RefreshCw, 
-  Trash2, AlertTriangle, Share2
+  Trash2, AlertTriangle 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import { CopyButton } from "@/components/ui/copy-button";
-import { ShareButton } from "@/components/ui/share-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -272,14 +271,6 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
 
       {/* Audio Player */}
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-semibold text-gray-800">錄音</h2>
-          <ShareButton
-            title={recording.title}
-            content={`聆聽錄音: ${window.location.origin}/recordings/${recordingId}`}
-            type="audio"
-          />
-        </div>
         <AudioPlayer 
           src={`/api/audio/${recording.filename}`}
           onTimeUpdate={setCurrentTime}
@@ -298,23 +289,13 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
         <TabsContent value="transcript" className="mt-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">詳細逐字稿</h2>
-            <div className="flex gap-2">
-              <ShareButton
-                title={recording.title}
-                content={transcript?.content ? 
-                  transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n') : 
-                  null}
-                type="transcript"
-                disabled={!transcript?.content || transcript.content.length === 0}
+            {transcript?.content && transcript.content.length > 0 && (
+              <CopyButton
+                text={transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n')}
+                label="複製全文"
+                successMessage="逐字稿已複製到剪貼簿"
               />
-              {transcript?.content && transcript.content.length > 0 && (
-                <CopyButton
-                  text={transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n')}
-                  label="複製全文"
-                  successMessage="逐字稿已複製到剪貼簿"
-                />
-              )}
-            </div>
+            )}
           </div>
           
           <Card>
@@ -413,11 +394,6 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     <RefreshCw className={`h-4 w-4 mr-2 ${generateNotesMutation.isPending ? 'animate-spin' : ''}`} />
                     重新生成
                   </Button>
-                  <ShareButton
-                    title={recording.title}
-                    content={notes.content}
-                    type="notes"
-                  />
                   <CopyButton
                     text={notes.content}
                     variant="default"
