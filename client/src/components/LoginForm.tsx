@@ -47,11 +47,40 @@ export function LoginForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "登入失敗");
+        // 根據伺服器響應提供更精確的錯誤訊息
+        if (response.status === 401) {
+          // 檢查是否為「帳號不存在」或「密碼錯誤」
+          if (data.message.includes("帳號") || data.message.includes("電子郵件")) {
+            throw new Error("此帳號尚未註冊");
+          } else {
+            throw new Error("密碼錯誤，請再試一次");
+          }
+        } else {
+          throw new Error(data.message || "登入失敗");
+        }
       }
 
       // 儲存使用者資訊於 localStorage
       localStorage.setItem("user", JSON.stringify(data.user));
+      
+      // 嘗試載入用戶資料
+      try {
+        const recordingsResponse = await fetch("/api/recordings");
+        if (!recordingsResponse.ok) {
+          toast({
+            title: "注意",
+            description: "用戶資料載入失敗，請重新整理頁面",
+            variant: "destructive",
+          });
+        }
+      } catch (loadError) {
+        console.error("Failed to load user data:", loadError);
+        toast({
+          title: "注意",
+          description: "用戶資料載入失敗，請重新整理頁面",
+          variant: "destructive",
+        });
+      }
       
       toast({
         title: "登入成功",
@@ -65,11 +94,31 @@ export function LoginForm() {
       console.error("Login failed:", error);
       const message = error instanceof Error ? error.message : "登入失敗，請稍後再試";
       
-      toast({
-        title: "登入失敗",
-        description: message,
-        variant: "destructive",
-      });
+      // 特殊錯誤處理，如果是帳號不存在，提示用戶註冊
+      if (message === "此帳號尚未註冊") {
+        toast({
+          title: "帳號不存在",
+          description: (
+            <div>
+              此電子郵件尚未註冊，
+              <Button 
+                variant="link" 
+                className="h-auto p-0 text-white underline" 
+                onClick={() => navigate("/register")}
+              >
+                立即註冊
+              </Button>
+            </div>
+          ),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "登入失敗",
+          description: message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

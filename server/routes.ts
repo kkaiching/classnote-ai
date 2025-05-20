@@ -118,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(401).json({ 
           success: false, 
-          message: "登入失敗，請檢查帳號密碼" 
+          message: "此電子郵件尚未註冊" 
         });
       }
 
@@ -126,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.password !== validatedData.data.password) {
         return res.status(401).json({ 
           success: false, 
-          message: "登入失敗，請檢查帳號密碼" 
+          message: "密碼錯誤，請再試一次" 
         });
       }
 
