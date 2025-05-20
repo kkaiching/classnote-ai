@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { LoginUser } from '@shared/schema';
 import { useLocation, Link } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -13,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
 // 驗證規則
-const LoginSchema = Yup.object().shape({
+const RegisterSchema = Yup.object().shape({
   username: Yup.string()
     .min(2, '使用者名稱太短')
     .max(50, '使用者名稱太長')
@@ -21,67 +20,57 @@ const LoginSchema = Yup.object().shape({
   password: Yup.string()
     .min(6, '密碼至少需要6個字元')
     .required('密碼為必填欄位'),
+  email: Yup.string()
+    .email('請輸入有效的電子郵件')
+    .notRequired(),
+  name: Yup.string()
+    .notRequired(),
 });
 
-interface LoginResponse {
+interface RegisterResponse {
   success: boolean;
   user: {
     id: number;
     username: string;
     name?: string;
   };
-  token: string;
   message?: string;
 }
 
-interface AuthContextType {
-  isAuthenticated: boolean;
-  user: any;
-  login: (token: string, userData: any) => void;
-  logout: () => void;
-}
-
-// 使用實際的 AuthContext
-import { useAuth } from '@/contexts/AuthContext';
-
-export function LoginForm() {
+export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
-  const auth = useAuth();
-  const [, setLocation] = useLocation(); 
+  const [, setLocation] = useLocation();
 
-  // 使用 TanStack Query 的 useMutation 處理登入請求
-  const loginMutation = useMutation({
-    mutationFn: async (values: LoginUser) => {
+  // 使用 TanStack Query 的 useMutation 處理註冊請求
+  const registerMutation = useMutation({
+    mutationFn: async (values: any) => {
       const response = await apiRequest(
         'POST',
-        '/api/auth/login',
+        '/api/auth/register',
         values
       );
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || '登入失敗');
+        throw new Error(errorData.message || '註冊失敗');
       }
       
-      return response.json() as Promise<LoginResponse>;
+      return response.json() as Promise<RegisterResponse>;
     },
     onSuccess: (data) => {
-      // 登入成功，儲存 token 與使用者資料
-      auth.login(data.token, data.user);
-      
       toast({
-        title: '登入成功',
-        description: '歡迎回來！',
+        title: '註冊成功',
+        description: '請使用您的新帳號登入系統。',
       });
       
-      // 導航至首頁
-      window.location.href = '/';
+      // 導航至登入頁
+      setLocation('/login');
     },
     onError: (error: Error) => {
       toast({
-        title: '登入失敗',
-        description: error.message || '請檢查您的憑證並重試',
+        title: '註冊失敗',
+        description: error.message || '請檢查您的資訊並重試',
         variant: 'destructive',
       });
     }
@@ -94,21 +83,21 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">會員登入</CardTitle>
+        <CardTitle className="text-2xl font-bold">註冊新帳號</CardTitle>
         <CardDescription>
-          請輸入您的帳號密碼進行登入
+          請填寫以下資訊完成註冊
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Formik
-          initialValues={{ username: '', password: '' }}
-          validationSchema={LoginSchema}
+          initialValues={{ username: '', password: '', email: '', name: '' }}
+          validationSchema={RegisterSchema}
           onSubmit={(values) => {
-            loginMutation.mutate(values);
+            registerMutation.mutate(values);
           }}
         >
           {({ errors, touched }) => (
-            <Form className="space-y-6">
+            <Form className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">使用者名稱</Label>
                 <Field
@@ -156,18 +145,56 @@ export function LoginForm() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="email">電子郵件 (選填)</Label>
+                <Field
+                  as={Input}
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="請輸入您的電子郵件"
+                  className={`w-full ${
+                    errors.email && touched.email ? 'border-red-500' : ''
+                  }`}
+                />
+                <ErrorMessage
+                  name="email"
+                  component="div"
+                  className="text-sm text-red-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="name">姓名 (選填)</Label>
+                <Field
+                  as={Input}
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="請輸入您的姓名"
+                  className={`w-full ${
+                    errors.name && touched.name ? 'border-red-500' : ''
+                  }`}
+                />
+                <ErrorMessage
+                  name="name"
+                  component="div"
+                  className="text-sm text-red-500"
+                />
+              </div>
+
               <Button
                 type="submit"
-                className="w-full"
-                disabled={loginMutation.isPending}
+                className="w-full mt-4"
+                disabled={registerMutation.isPending}
               >
-                {loginMutation.isPending ? (
+                {registerMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    登入中...
+                    註冊中...
                   </>
                 ) : (
-                  '登入'
+                  '建立帳號'
                 )}
               </Button>
             </Form>
@@ -176,9 +203,9 @@ export function LoginForm() {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-gray-500">
-          還沒有帳號？{' '}
-          <Link href="/register" className="text-blue-600 hover:underline">
-            立即註冊
+          已經有帳號？{' '}
+          <Link href="/login" className="text-blue-600 hover:underline">
+            立即登入
           </Link>
         </p>
       </CardFooter>

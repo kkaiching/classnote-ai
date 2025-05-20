@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import RecordingDetail from "@/pages/RecordingDetail";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/Login";
+import RegisterPage from "@/pages/Register";
 import { useEffect } from "react";
 
 // 受保護的路由元件，需要登入才能訪問
@@ -30,11 +31,15 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
       <Route path="/">
         {() => <ProtectedRoute component={Home} />}
       </Route>
       <Route path="/recording/:id">
-        {(params) => <ProtectedRoute component={RecordingDetail} recordingId={parseInt(params.id, 10)} />}
+        {(params) => {
+          const Component = () => <RecordingDetail recordingId={parseInt(params.id, 10)} />;
+          return <ProtectedRoute component={Component} />;
+        }}
       </Route>
       <Route component={NotFound} />
     </Switch>
