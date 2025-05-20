@@ -59,6 +59,103 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register new user
+  app.post("/api/register", async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const validatedData = insertUserSchema.safeParse(req.body);
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "資料驗證失敗", 
+          errors: validatedData.error.errors 
+        });
+      }
+
+      // Check if user with the same email already exists
+      const existingUser = await storage.getUserByEmail(validatedData.data.email);
+      if (existingUser) {
+        return res.status(409).json({ 
+          success: false, 
+          message: "此電子郵件已經被註冊" 
+        });
+      }
+
+      // Create user
+      const user = await storage.createUser(validatedData.data);
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json({ 
+        success: true, 
+        message: "註冊成功", 
+        user: userWithoutPassword 
+      });
+    } catch (error) {
+      console.error("Error registering user:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "註冊失敗，請稍後再試" 
+      });
+    }
+  });
+
+  // Login user
+  app.post("/api/login", async (req: Request, res: Response) => {
+    try {
+      // Validate request body
+      const validatedData = loginUserSchema.safeParse(req.body);
+      if (!validatedData.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "資料驗證失敗", 
+          errors: validatedData.error.errors 
+        });
+      }
+
+      // Check if user exists
+      const user = await storage.getUserByEmail(validatedData.data.email);
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "登入失敗，請檢查帳號密碼" 
+        });
+      }
+
+      // Check password
+      if (user.password !== validatedData.data.password) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "登入失敗，請檢查帳號密碼" 
+        });
+      }
+
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.json({ 
+        success: true, 
+        message: "登入成功", 
+        user: userWithoutPassword 
+      });
+    } catch (error) {
+      console.error("Error logging in user:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "登入失敗，請稍後再試" 
+      });
+    }
+  });
+
+  // Get current user
+  app.get("/api/user", async (req: Request, res: Response) => {
+    // This is a placeholder for actual authentication
+    // In a real implementation, you would check session or JWT token
+    res.status(401).json({ 
+      success: false, 
+      message: "未登入" 
+    });
+  });
+
   // Get all recordings
   app.get("/api/recordings", async (req: Request, res: Response) => {
     try {
