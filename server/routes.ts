@@ -5,7 +5,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
-import { insertRecordingSchema, insertTranscriptSchema, insertNoteSchema } from "@shared/schema";
+import { insertRecordingSchema, insertTranscriptSchema, insertNoteSchema, insertUserSchema, loginUserSchema } from "@shared/schema";
 import { transcribeAudio, generateNotes, parseTranscriptWithTimestamps } from "./openai";
 import { fileURLToPath } from "url";
 

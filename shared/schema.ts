@@ -4,16 +4,25 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  name: true,
+  email: true,
   password: true,
 });
 
+export const loginUserSchema = z.object({
+  email: z.string().email("請輸入有效的電子郵件"),
+  password: z.string().min(6, "密碼不得少於6字元"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type LoginUser = z.infer<typeof loginUserSchema>;
 export type User = typeof users.$inferSelect;
 
 // Recordings table
