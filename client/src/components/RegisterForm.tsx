@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { useFormik } from "formik";
 import * as Yup from "yup";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "./ui/card";
+import { useToast } from "../hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 interface RegisterFormValues {
@@ -37,7 +37,7 @@ export function RegisterForm() {
     password: "",
   };
 
-  const handleSubmit = async (values: RegisterFormValues) => {
+  const handleRegisterSubmit = async (values: RegisterFormValues) => {
     setIsSubmitting(true);
     try {
       const response = await fetch("/api/register", {
@@ -76,6 +76,12 @@ export function RegisterForm() {
     }
   };
 
+  const formik = useFormik({
+    initialValues,
+    validationSchema: RegisterSchema,
+    onSubmit: handleRegisterSubmit
+  });
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -83,79 +89,71 @@ export function RegisterForm() {
         <CardDescription>建立您的帳號以使用所有功能</CardDescription>
       </CardHeader>
       <CardContent>
-        <Formik
-          initialValues={initialValues}
-          validationSchema={RegisterSchema}
-          onSubmit={handleSubmit}
-        >
-          {({ errors, touched }) => (
-            <Form className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">姓名</Label>
-                <Field 
-                  as={Input}
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="輸入您的姓名"
-                  className={`w-full ${errors.name && touched.name ? "border-red-500" : ""}`}
-                />
-                <ErrorMessage 
-                  name="name" 
-                  component="div" 
-                  className="text-sm text-red-500" 
-                />
-              </div>
+        <form onSubmit={formik.handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">姓名</Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              placeholder="輸入您的姓名"
+              className={`w-full ${formik.touched.name && formik.errors.name ? "border-red-500" : ""}`}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              value={formik.values.name}
+            />
+            {formik.touched.name && formik.errors.name && (
+              <div className="text-sm text-red-500">{formik.errors.name}</div>
+            )}
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">電子郵件</Label>
-                <Field 
-                  as={Input}
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="輸入您的電子郵件"
-                  className={`w-full ${errors.email && touched.email ? "border-red-500" : ""}`}
-                />
-                <ErrorMessage 
-                  name="email" 
-                  component="div" 
-                  className="text-sm text-red-500" 
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">電子郵件</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="輸入您的電子郵件"
+              className={`w-full ${formik.touched.email && formik.errors.email ? "border-red-500" : ""}`}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              value={formik.values.email}
+            />
+            {formik.touched.email && formik.errors.email && (
+              <div className="text-sm text-red-500">{formik.errors.email}</div>
+            )}
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">密碼</Label>
-                <Field 
-                  as={Input}
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="輸入您的密碼"
-                  className={`w-full ${errors.password && touched.password ? "border-red-500" : ""}`}
-                />
-                <ErrorMessage 
-                  name="password" 
-                  component="div" 
-                  className="text-sm text-red-500" 
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">密碼</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="輸入您的密碼"
+              className={`w-full ${formik.touched.password && formik.errors.password ? "border-red-500" : ""}`}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              value={formik.values.password}
+            />
+            {formik.touched.password && formik.errors.password && (
+              <div className="text-sm text-red-500">{formik.errors.password}</div>
+            )}
+          </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    註冊中...
-                  </>
-                ) : "註冊"}
-              </Button>
-            </Form>
-          )}
-        </Formik>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                註冊中...
+              </>
+            ) : "註冊"}
+          </Button>
+        </form>
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-gray-500">
