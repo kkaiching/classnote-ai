@@ -365,7 +365,7 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     if (navigator.share) {
                       // 先嘗試使用URL分享 (macOS分享表單)
                       navigator.share({
-                        title: `${recording.title} - 逐字稿`,
+                        title: `${recording.title}`,
                         url: url
                       }).catch(err => {
                         // 如果URL分享失敗，再嘗試檔案分享
@@ -529,7 +529,7 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                       if (navigator.share) {
                         // 先嘗試使用URL分享 (macOS分享表單)
                         navigator.share({
-                          title: `${recording.title} - AI筆記`,
+                          title: `${recording.title}`,
                           url: url
                         }).catch(err => {
                           // 如果URL分享失敗，再嘗試檔案分享
