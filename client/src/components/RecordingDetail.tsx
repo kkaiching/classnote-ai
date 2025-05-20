@@ -278,28 +278,40 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
             size="sm"
             className="flex items-center gap-1"
             onClick={() => {
-              // 簡化分享功能，優先使用直接下載方式，避免404錯誤
               const fileExt = recording.filename.split('.').pop() || 'audio';
-              const fileName = `${recording.title}.${fileExt}`;
-              const url = `/api/recordings/${recordingId}/download`;
-
-              try {
-                // 檢查是否支援Web Share API並且可以分享文字
-                if (navigator.share) {
-                  // 只分享標題和訊息，不嘗試分享檔案以避免錯誤
-                  navigator.share({
-                    title: `${recording.title} - 錄音`,
-                    text: `收聽錄音: ${recording.title}`
-                  }).catch(() => {
-                    // 如果分享失敗，回退到直接下載
+              const url = `${window.location.origin}/api/recordings/${recordingId}/download`;
+              
+              if (navigator.share && navigator.canShare) {
+                // 使用 fetch 先下載檔案內容
+                fetch(url)
+                  .then(response => response.blob())
+                  .then(blob => {
+                    const file = new File(
+                      [blob], 
+                      `${recording.title}.${fileExt}`, 
+                      { type: blob.type }
+                    );
+                    
+                    // 檢查是否可以分享此檔案
+                    if (navigator.canShare({ files: [file] })) {
+                      navigator.share({
+                        title: `${recording.title} - 錄音`,
+                        files: [file]
+                      }).catch(err => {
+                        // 分享失敗時回退到直接下載
+                        window.location.href = url;
+                      });
+                    } else {
+                      // 不支援檔案分享時直接下載
+                      window.location.href = url;
+                    }
+                  })
+                  .catch(err => {
+                    // 發生錯誤時直接下載
                     window.location.href = url;
                   });
-                } else {
-                  // 不支援分享，直接下載
-                  window.location.href = url;
-                }
-              } catch (err) {
-                // 發生錯誤時直接下載
+              } else {
+                // 不支援分享API時直接下載
                 window.location.href = url;
               }
             }}
@@ -333,26 +345,39 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                   size="sm"
                   className="flex items-center gap-1"
                   onClick={() => {
-                    // 簡化分享功能，使用更簡單的方法避免404錯誤
-                    const url = `/api/recordings/${recordingId}/transcript/download`;
+                    const url = `${window.location.origin}/api/recordings/${recordingId}/transcript/download`;
                     
-                    try {
-                      // 檢查是否支援Web Share API
-                      if (navigator.share) {
-                        // 只分享標題和訊息，不嘗試分享檔案以避免錯誤
-                        navigator.share({
-                          title: `${recording.title} - 逐字稿`,
-                          text: transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n').substring(0, 100) + '...'
-                        }).catch(() => {
-                          // 如果分享失敗，回退到直接下載
+                    if (navigator.share && navigator.canShare) {
+                      // 使用 fetch 先下載檔案內容
+                      fetch(url)
+                        .then(response => response.blob())
+                        .then(blob => {
+                          const file = new File(
+                            [blob], 
+                            `${recording.title}_transcript.txt`, 
+                            { type: 'text/plain' }
+                          );
+                          
+                          // 檢查是否可以分享此檔案
+                          if (navigator.canShare({ files: [file] })) {
+                            navigator.share({
+                              title: `${recording.title} - 逐字稿`,
+                              files: [file]
+                            }).catch(err => {
+                              // 分享失敗時回退到直接下載
+                              window.location.href = url;
+                            });
+                          } else {
+                            // 不支援檔案分享時直接下載
+                            window.location.href = url;
+                          }
+                        })
+                        .catch(err => {
+                          // 發生錯誤時直接下載
                           window.location.href = url;
                         });
-                      } else {
-                        // 不支援分享，直接下載
-                        window.location.href = url;
-                      }
-                    } catch (err) {
-                      // 發生錯誤時直接下載
+                    } else {
+                      // 不支援分享API時直接下載
                       window.location.href = url;
                     }
                   }}
@@ -470,26 +495,39 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     size="sm"
                     className="flex items-center gap-1"
                     onClick={() => {
-                      // 簡化分享功能，使用更簡單的方法避免404錯誤
-                      const url = `/api/recordings/${recordingId}/notes/download`;
+                      const url = `${window.location.origin}/api/recordings/${recordingId}/notes/download`;
                       
-                      try {
-                        // 檢查是否支援Web Share API
-                        if (navigator.share) {
-                          // 只分享標題和訊息，不嘗試分享檔案以避免錯誤
-                          navigator.share({
-                            title: `${recording.title} - AI筆記`,
-                            text: notes.content.substring(0, 100) + '...'
-                          }).catch(() => {
-                            // 如果分享失敗，回退到直接下載
+                      if (navigator.share && navigator.canShare) {
+                        // 使用 fetch 先下載檔案內容
+                        fetch(url)
+                          .then(response => response.blob())
+                          .then(blob => {
+                            const file = new File(
+                              [blob], 
+                              `${recording.title}_notes.txt`, 
+                              { type: 'text/plain' }
+                            );
+                            
+                            // 檢查是否可以分享此檔案
+                            if (navigator.canShare({ files: [file] })) {
+                              navigator.share({
+                                title: `${recording.title} - AI筆記`,
+                                files: [file]
+                              }).catch(err => {
+                                // 分享失敗時回退到直接下載
+                                window.location.href = url;
+                              });
+                            } else {
+                              // 不支援檔案分享時直接下載
+                              window.location.href = url;
+                            }
+                          })
+                          .catch(err => {
+                            // 發生錯誤時直接下載
                             window.location.href = url;
                           });
-                        } else {
-                          // 不支援分享，直接下載
-                          window.location.href = url;
-                        }
-                      } catch (err) {
-                        // 發生錯誤時直接下載
+                      } else {
+                        // 不支援分享API時直接下載
                         window.location.href = url;
                       }
                     }}
