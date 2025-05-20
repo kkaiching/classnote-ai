@@ -523,7 +523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Safe filename for download
       const safeTitle = recording.title.replace(/[^a-z0-9]/gi, '_');
-      const downloadFilename = `${safeTitle}_notes.txt`;
+      const downloadFilename = `${safeTitle}_note.txt`;
       
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);

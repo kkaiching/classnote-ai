@@ -294,9 +294,10 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                       .then(response => response.blob())
                       .then(blob => {
                         // Always use .m4a for audio files as requested
+                        const fileName = `${recording.title}.m4a`;
                         const file = new File(
                           [blob], 
-                          `${recording.title}.m4a`, 
+                          fileName, 
                           { type: blob.type }
                         );
                         
@@ -374,9 +375,10 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                           fetch(url)
                             .then(response => response.blob())
                             .then(blob => {
+                              const fileName = `${recording.title}_transcript.txt`;
                               const file = new File(
                                 [blob], 
-                                `${recording.title}_transcript.txt`, 
+                                fileName, 
                                 { type: 'text/plain' }
                               );
                               
@@ -538,9 +540,10 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                             fetch(url)
                               .then(response => response.blob())
                               .then(blob => {
+                                const fileName = `${recording.title}_note.txt`;
                                 const file = new File(
                                   [blob], 
-                                  `${recording.title}_note.txt`, 
+                                  fileName, 
                                   { type: 'text/plain' }
                                 );
                                 
