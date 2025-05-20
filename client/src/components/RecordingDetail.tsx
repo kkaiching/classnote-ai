@@ -298,13 +298,23 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
         <TabsContent value="transcript" className="mt-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">詳細逐字稿</h2>
-            {transcript?.content && transcript.content.length > 0 && (
-              <CopyButton
-                text={transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n')}
-                label="複製全文"
-                successMessage="逐字稿已複製到剪貼簿"
+            <div className="flex gap-2">
+              <ShareButton
+                title={recording.title}
+                content={transcript?.content ? 
+                  transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n') : 
+                  null}
+                type="transcript"
+                disabled={!transcript?.content || transcript.content.length === 0}
               />
-            )}
+              {transcript?.content && transcript.content.length > 0 && (
+                <CopyButton
+                  text={transcript.content.map(item => `${item.timestamp} ${item.speaker}：${item.text}`).join('\n')}
+                  label="複製全文"
+                  successMessage="逐字稿已複製到剪貼簿"
+                />
+              )}
+            </div>
           </div>
           
           <Card>
@@ -403,6 +413,11 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
                     <RefreshCw className={`h-4 w-4 mr-2 ${generateNotesMutation.isPending ? 'animate-spin' : ''}`} />
                     重新生成
                   </Button>
+                  <ShareButton
+                    title={recording.title}
+                    content={notes.content}
+                    type="notes"
+                  />
                   <CopyButton
                     text={notes.content}
                     variant="default"
