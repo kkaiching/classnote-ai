@@ -3,12 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { 
   ArrowLeft, Clock, Calendar, FileAudio, RefreshCw, 
-  Trash2, AlertTriangle 
+  Trash2, AlertTriangle, Share2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import { CopyButton } from "@/components/ui/copy-button";
+import { ShareButton } from "@/components/ui/share-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -271,6 +272,14 @@ export function RecordingDetail({ recordingId }: RecordingDetailProps) {
 
       {/* Audio Player */}
       <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-semibold text-gray-800">錄音</h2>
+          <ShareButton
+            title={recording.title}
+            content={`聆聽錄音: ${window.location.origin}/recordings/${recordingId}`}
+            type="audio"
+          />
+        </div>
         <AudioPlayer 
           src={`/api/audio/${recording.filename}`}
           onTimeUpdate={setCurrentTime}
