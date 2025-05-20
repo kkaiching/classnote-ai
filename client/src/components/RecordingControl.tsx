@@ -41,7 +41,12 @@ export function RecordingControl() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      const mediaRecorder = new MediaRecorder(stream);
+      // Use AAC codec for better m4a recording compatibility
+      const options = { mimeType: 'audio/mp4;codecs=mp4a.40.2' };
+      // Fallback to default if the browser doesn't support the specified mimeType
+      const mediaRecorder = options.mimeType && MediaRecorder.isTypeSupported(options.mimeType)
+        ? new MediaRecorder(stream, options)
+        : new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       
       mediaRecorder.ondataavailable = (event) => {
@@ -168,13 +173,13 @@ export function RecordingControl() {
     
     try {
       // Create a blob with the recorded chunks
-      const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+      const audioBlob = new Blob(recordedChunksRef.current, { type: 'audio/m4a' });
       
       // Create a filename with current date and time
       const now = new Date();
       const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
       const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
-      const filename = `${dateStr}-${timeStr}.webm`;
+      const filename = `${dateStr}-${timeStr}.m4a`;
       
       // Create FormData
       const formData = new FormData();
