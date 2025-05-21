@@ -66,11 +66,31 @@ export function RegisterForm() {
       console.error("Registration failed:", error);
       const message = error instanceof Error ? error.message : "註冊失敗，請稍後再試";
       
-      toast({
-        title: "註冊失敗",
-        description: message,
-        variant: "destructive",
-      });
+      // 檢查是否為「電子郵件已存在」的情況
+      if (message.includes("電子郵件已註冊") || message.includes("此電子郵件已")) {
+        toast({
+          title: "此電子郵件已註冊",
+          description: (
+            <div>
+              此電子郵件已註冊過，
+              <Button 
+                variant="link" 
+                className="h-auto p-0 text-white underline" 
+                onClick={() => navigate("/login")}
+              >
+                立即登入
+              </Button>
+            </div>
+          ),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "註冊失敗",
+          description: message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

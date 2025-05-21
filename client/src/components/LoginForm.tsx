@@ -49,11 +49,16 @@ export function LoginForm() {
       if (!response.ok) {
         // 根據伺服器響應提供更精確的錯誤訊息
         if (response.status === 401) {
-          // 檢查是否為「帳號不存在」或「密碼錯誤」
-          if (data.message.includes("帳號") || data.message.includes("電子郵件")) {
-            throw new Error("此帳號尚未註冊");
-          } else {
+          // 檢查是否為「帳號不存在」
+          if (data.message.includes("尚未註冊") || data.message.includes("不存在")) {
+            throw new Error("此電子郵件尚未註冊");
+          } 
+          // 檢查是否為「密碼錯誤」
+          else if (data.message.includes("密碼錯誤")) {
             throw new Error("密碼錯誤，請再試一次");
+          } 
+          else {
+            throw new Error(data.message || "登入失敗");
           }
         } else {
           throw new Error(data.message || "登入失敗");
@@ -84,7 +89,7 @@ export function LoginForm() {
       
       toast({
         title: "登入成功",
-        description: "歡迎回來！",
+        description: data.message || "歡迎回來！",
       });
 
       // 導回首頁
@@ -95,7 +100,7 @@ export function LoginForm() {
       const message = error instanceof Error ? error.message : "登入失敗，請稍後再試";
       
       // 特殊錯誤處理，如果是帳號不存在，提示用戶註冊
-      if (message === "此帳號尚未註冊") {
+      if (message.includes("尚未註冊") || message.includes("不存在")) {
         toast({
           title: "帳號不存在",
           description: (
