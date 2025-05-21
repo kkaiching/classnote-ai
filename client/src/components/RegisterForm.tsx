@@ -40,6 +40,33 @@ export function RegisterForm() {
   const handleRegisterSubmit = async (values: RegisterFormValues) => {
     setIsSubmitting(true);
     try {
+      // 先檢查郵件是否已存在
+      const checkEmailResponse = await fetch(`/api/user/check-email?email=${encodeURIComponent(values.email)}`, {
+        method: "GET"
+      });
+      
+      if (checkEmailResponse.ok) {
+        const checkEmailData = await checkEmailResponse.json();
+        
+        if (checkEmailData.exists) {
+          // 郵件已存在，提示用戶登入
+          toast({
+            title: "電子郵件已註冊",
+            description: "此電子郵件已被註冊，請直接登入",
+            action: (
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
+                  立即登入
+                </Button>
+              </div>
+            ),
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
+      // 繼續註冊流程
       const response = await fetch("/api/register", {
         method: "POST",
         headers: {
@@ -51,46 +78,47 @@ export function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "註冊失敗");
+        // 處理特定錯誤情況
+        if (response.status === 409) {
+          // 郵件已被註冊（如果前面的檢查沒有捕捉到這種情況）
+          toast({
+            title: "註冊失敗",
+            description: "此電子郵件已被註冊，請使用其他電子郵件或直接登入",
+            action: (
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
+                  立即登入
+                </Button>
+              </div>
+            ),
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(data.message || "註冊失敗");
+        }
+        return;
       }
 
+      // 儲存使用者資訊於 localStorage
+      localStorage.setItem("user", JSON.stringify(data.user));
+      
       toast({
         title: "註冊成功",
-        description: "請立即登入您的帳號",
+        description: "歡迎回來！",
       });
 
-      // 註冊成功後導向登入頁
-      navigate("/login");
+      // 註冊成功後直接導向首頁
+      navigate("/");
 
     } catch (error) {
       console.error("Registration failed:", error);
       const message = error instanceof Error ? error.message : "註冊失敗，請稍後再試";
       
-      // 檢查是否為「電子郵件已存在」的情況
-      if (message.includes("電子郵件已註冊") || message.includes("此電子郵件已")) {
-        toast({
-          title: "此電子郵件已註冊",
-          description: (
-            <div>
-              此電子郵件已註冊過，
-              <Button 
-                variant="link" 
-                className="h-auto p-0 text-white underline" 
-                onClick={() => navigate("/login")}
-              >
-                立即登入
-              </Button>
-            </div>
-          ),
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "註冊失敗",
-          description: message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "註冊失敗",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
