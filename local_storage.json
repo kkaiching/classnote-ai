@@ -1,0 +1,21 @@
+{
+  "users": [
+    [
+      1,
+      {
+        "name": "Mina",
+        "email": "mina_chang@cmoney.com.tw",
+        "password": "12345678",
+        "id": 1,
+        "createdAt": "2025-05-21T03:47:31.437Z"
+      }
+    ]
+  ],
+  "recordings": [],
+  "transcripts": [],
+  "notes": [],
+  "userCurrentId": 2,
+  "recordingCurrentId": 1,
+  "transcriptCurrentId": 1,
+  "noteCurrentId": 1
+}

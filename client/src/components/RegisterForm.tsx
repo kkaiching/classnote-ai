@@ -51,6 +51,30 @@ export function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
+        // 特殊處理已經註冊的情況
+        if (response.status === 409) {
+          toast({
+            title: "註冊失敗",
+            description: "此電子郵件已經被註冊",
+            variant: "destructive",
+          });
+          
+          // 顯示提示登入訊息
+          setTimeout(() => {
+            toast({
+              title: "已有帳號？",
+              description: "請直接登入已存在的帳號",
+              action: (
+                <Button variant="outline" onClick={() => navigate("/login")}>
+                  立即登入
+                </Button>
+              ),
+            });
+          }, 1000);
+          
+          return;
+        }
+        
         throw new Error(data.message || "註冊失敗");
       }
 

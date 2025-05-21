@@ -47,6 +47,23 @@ export function LoginForm() {
       const data = await response.json();
 
       if (!response.ok) {
+        // 根據錯誤類型處理不同情況
+        if (response.status === 404 && data.notRegistered) {
+          toast({
+            title: "帳號未註冊",
+            description: "此帳號尚未註冊，請先註冊一個帳號",
+            variant: "destructive",
+          });
+          return;
+        } else if (response.status === 401 && data.wrongPassword) {
+          toast({
+            title: "密碼錯誤",
+            description: "密碼錯誤，請再試一次",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         throw new Error(data.message || "登入失敗");
       }
 
@@ -55,7 +72,7 @@ export function LoginForm() {
       
       toast({
         title: "登入成功",
-        description: "歡迎回來！",
+        description: data.message || "歡迎回來！",
       });
 
       // 導回首頁

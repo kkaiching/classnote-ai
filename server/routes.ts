@@ -116,9 +116,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user exists
       const user = await storage.getUserByEmail(validatedData.data.email);
       if (!user) {
-        return res.status(401).json({ 
+        return res.status(404).json({ 
           success: false, 
-          message: "登入失敗，請檢查帳號密碼" 
+          message: "此帳號尚未註冊", 
+          notRegistered: true
         });
       }
 
@@ -126,7 +127,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.password !== validatedData.data.password) {
         return res.status(401).json({ 
           success: false, 
-          message: "登入失敗，請檢查帳號密碼" 
+          message: "密碼錯誤，請再試一次", 
+          wrongPassword: true
         });
       }
 
@@ -134,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password, ...userWithoutPassword } = user;
       res.json({ 
         success: true, 
-        message: "登入成功", 
+        message: "登入成功，歡迎回來！", 
         user: userWithoutPassword 
       });
     } catch (error) {
