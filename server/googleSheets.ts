@@ -10,7 +10,7 @@ interface GoogleSheetsConfig {
 }
 
 export const sheetsConfig: GoogleSheetsConfig = {
-  spreadsheetId: process.env.GOOGLE_SHEETS_ID || '',
+  spreadsheetId: process.env.GOOGLE_SHEETS_ID || '1Oyrcnju-Fe7WClPvw-Up97b_gVcxC6utqMaeAPk54UA',
   sheets: {
     users: 'Users'  // 使用者資料表名稱
   }

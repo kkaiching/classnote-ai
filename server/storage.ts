@@ -202,7 +202,6 @@ export const memStorage = new MemStorage();
 
 // 增強版儲存層 - 支持 Google Sheets
 class EnhancedStorage implements IStorage {
-  private useFileStorage: boolean = true;
   private initialized: boolean = false;
 
   constructor() {
@@ -213,67 +212,60 @@ class EnhancedStorage implements IStorage {
 
   private async init() {
     try {
-      this.useFileStorage = true;
-      console.log('Using local file storage for user data');
+      // 導入用戶儲存模組
+      const { userStorage } = await import('./userStorage');
       this.initialized = true;
     } catch (error) {
-      console.error('Failed to initialize storage:', error);
-      console.log('Falling back to memory storage');
-      this.useFileStorage = false;
+      console.error('Failed to initialize enhanced storage:', error);
       this.initialized = true;
     }
   }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    if (this.useFileStorage) {
-      try {
-        return await localUserStore.getUser(id);
-      } catch (error) {
-        console.error('Error getting user from file storage:', error);
-      }
+    // 導入用戶儲存服務
+    const { userStorage } = await import('./userStorage');
+    try {
+      return await userStorage.getUser(id);
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return memStorage.getUser(id);
     }
-    return memStorage.getUser(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    if (this.useFileStorage) {
-      try {
-        return await localUserStore.getUserByUsername(username);
-      } catch (error) {
-        console.error('Error getting user by username from file storage:', error);
-      }
+    // 導入用戶儲存服務
+    const { userStorage } = await import('./userStorage');
+    try {
+      return await userStorage.getUserByUsername(username);
+    } catch (error) {
+      console.error('Error getting user by username:', error);
+      return memStorage.getUserByUsername(username);
     }
-    return memStorage.getUserByUsername(username);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    if (this.useFileStorage) {
-      try {
-        return await localUserStore.getUserByEmail(email);
-      } catch (error) {
-        console.error('Error getting user by email from file storage:', error);
-      }
+    // 導入用戶儲存服務
+    const { userStorage } = await import('./userStorage');
+    try {
+      return await userStorage.getUserByEmail(email);
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      return memStorage.getUserByEmail(email);
     }
-    return memStorage.getUserByEmail(email);
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    if (this.useFileStorage) {
-      try {
-        const newUser = await localUserStore.createUser(user);
-        console.log('Created new user in file storage:', user.name, '(' + user.email + ')');
-        
-        // 同時更新內存儲存
-        await memStorage.createUser(user);
-        
-        return newUser;
-      } catch (error) {
-        console.error('Error creating user in file storage:', error);
-        throw error;
-      }
+    // 導入用戶儲存服務
+    const { userStorage } = await import('./userStorage');
+    try {
+      // 同時寫入本地檔案和 Google Sheets (如果可用)
+      const newUser = await userStorage.createUser(user);
+      return newUser;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
     }
-    return memStorage.createUser(user);
   }
 
   // Recording methods
