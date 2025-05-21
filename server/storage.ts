@@ -1,4 +1,5 @@
 import { recordings, transcripts, notes, type Recording, type InsertRecording, type Transcript, type InsertTranscript, type Note, type InsertNote, users, type User, type InsertUser } from "@shared/schema";
+import { localUserStore } from "./localUserStore";
 
 // Storage interface
 export interface IStorage {
@@ -201,8 +202,7 @@ export const memStorage = new MemStorage();
 
 // 增強版儲存層 - 支持 Google Sheets
 class EnhancedStorage implements IStorage {
-  private sheetsStorage: Partial<IStorage> = {};
-  private useGoogleSheets: boolean = false;
+  private useFileStorage: boolean = true;
   private initialized: boolean = false;
 
   constructor() {
@@ -213,56 +213,63 @@ class EnhancedStorage implements IStorage {
 
   private async init() {
     try {
-      // 嘗試導入 Google Sheets 適配器
-      const { createSheetsAdapter } = await import('./sheetsAdapter');
-      this.sheetsStorage = await createSheetsAdapter();
-      
-      // 如果 Google Sheets 適配器有效（至少實現了基本的用戶方法）
-      this.useGoogleSheets = !!(this.sheetsStorage.createUser && this.sheetsStorage.getUserByEmail);
-      
-      if (this.useGoogleSheets) {
-        console.log('Using Google Sheets for user storage');
-      } else {
-        console.log('Falling back to mock storage');
-      }
+      this.useFileStorage = true;
+      console.log('Using local file storage for user data');
+      this.initialized = true;
     } catch (error) {
-      console.error('Failed to initialize Google Sheets adapter:', error);
-      console.log('Falling back to mock storage');
-    } finally {
+      console.error('Failed to initialize storage:', error);
+      console.log('Falling back to memory storage');
+      this.useFileStorage = false;
       this.initialized = true;
     }
   }
 
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    if (this.useGoogleSheets && this.sheetsStorage.getUser) {
-      return this.sheetsStorage.getUser(id);
+    if (this.useFileStorage) {
+      try {
+        return await localUserStore.getUser(id);
+      } catch (error) {
+        console.error('Error getting user from file storage:', error);
+      }
     }
     return memStorage.getUser(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    if (this.useGoogleSheets && this.sheetsStorage.getUserByUsername) {
-      return this.sheetsStorage.getUserByUsername(username);
+    if (this.useFileStorage) {
+      try {
+        return await localUserStore.getUserByUsername(username);
+      } catch (error) {
+        console.error('Error getting user by username from file storage:', error);
+      }
     }
     return memStorage.getUserByUsername(username);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    if (this.useGoogleSheets && this.sheetsStorage.getUserByEmail) {
-      return this.sheetsStorage.getUserByEmail(email);
+    if (this.useFileStorage) {
+      try {
+        return await localUserStore.getUserByEmail(email);
+      } catch (error) {
+        console.error('Error getting user by email from file storage:', error);
+      }
     }
     return memStorage.getUserByEmail(email);
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    if (this.useGoogleSheets && this.sheetsStorage.createUser) {
+    if (this.useFileStorage) {
       try {
-        const newUser = await this.sheetsStorage.createUser(user);
-        console.log('Created new user:', user.name, '(' + user.email + ')');
+        const newUser = await localUserStore.createUser(user);
+        console.log('Created new user in file storage:', user.name, '(' + user.email + ')');
+        
+        // 同時更新內存儲存
+        await memStorage.createUser(user);
+        
         return newUser;
       } catch (error) {
-        console.error('Error creating user in Google Sheets:', error);
+        console.error('Error creating user in file storage:', error);
         throw error;
       }
     }

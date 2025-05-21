@@ -24,19 +24,31 @@ export class GoogleSheetsService {
 
   constructor() {
     try {
+      console.log('Initializing Google Sheets service with client email:', process.env.GOOGLE_CLIENT_EMAIL?.substring(0, 5) + '...');
+      
+      // 建立更安全的憑證處理，避免私鑰格式問題
+      const credentials = {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL || '',
+        private_key: process.env.GOOGLE_PRIVATE_KEY || ''
+      };
+      
+      // 嘗試修復私鑰格式
+      if (!credentials.private_key.includes('-----BEGIN PRIVATE KEY-----')) {
+        credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+      }
+      
       const auth = new GoogleAuth({
-        credentials: {
-          client_email: process.env.GOOGLE_CLIENT_EMAIL,
-          private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-        },
+        credentials,
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
       });
 
       this.sheets = google.sheets({ version: 'v4', auth });
       this.initialized = true;
+      console.log('Google Sheets service initialized successfully');
     } catch (error) {
       console.error('Error initializing Google Sheets service:', error);
       this.initError = error instanceof Error ? error : new Error(String(error));
+      this.initialized = false;
     }
   }
 
