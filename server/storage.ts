@@ -1,6 +1,5 @@
 import { recordings, transcripts, notes, type Recording, type InsertRecording, type Transcript, type InsertTranscript, type Note, type InsertNote, users, type User, type InsertUser } from "@shared/schema";
-import * as googleSheets from "./googleSheetsDirect";
-import { localUserStore } from "./localUserStore";
+import { googleSheetsService } from "./googleSheets";
 
 // Storage interface
 export interface IStorage {
@@ -199,118 +198,231 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Create base memory storage
-export const memStorage = new MemStorage();
-
-// Enhanced storage class that uses local file storage for user data persistence
-class EnhancedStorage implements IStorage {
-  private useLocalStore: boolean = true;
-  
-  constructor() {
-    console.log("Initializing enhanced storage with local file persistence for user data");
-  }
-  
-  // User methods with local storage integration
+export class GoogleSheetsStorage implements IStorage {
+  // User methods that will use Google Sheets
   async getUser(id: number): Promise<User | undefined> {
-    if (this.useLocalStore) {
-      try {
-        return await localUserStore.getUser(id);
-      } catch (error) {
-        console.error("Error using local store for getUser:", error);
-      }
+    try {
+      // Since Google Sheets doesn't have easy querying by ID, we'll get all users and filter
+      const allUsers = await googleSheetsService.getAllUsers();
+      // This is inefficient with many users but works for our MVP
+      // We'll need to convert string ID to number to match
+      return allUsers.find(u => u.id?.toString() === id.toString());
+    } catch (error) {
+      console.error("Error fetching user from Google Sheets:", error);
+      return undefined;
     }
-    return memStorage.getUser(id);
   }
-  
+
   async getUserByUsername(username: string): Promise<User | undefined> {
-    if (this.useLocalStore) {
-      try {
-        return await localUserStore.getUserByUsername(username);
-      } catch (error) {
-        console.error("Error using local store for getUserByUsername:", error);
-      }
-    }
-    return memStorage.getUserByUsername(username);
+    // For backward compatibility
+    return this.getUserByEmail(username);
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    if (this.useLocalStore) {
-      try {
-        return await localUserStore.getUserByEmail(email);
-      } catch (error) {
-        console.error("Error using local store for getUserByEmail:", error);
-      }
+    try {
+      const user = await googleSheetsService.getUserByEmail(email);
+      if (!user) return undefined;
+      
+      // Convert to User type
+      return {
+        id: 0, // We don't have IDs in the Google Sheet
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        createdAt: new Date(user.createdAt)
+      };
+    } catch (error) {
+      console.error("Error fetching user by email from Google Sheets:", error);
+      return undefined;
     }
-    return memStorage.getUserByEmail(email);
   }
-  
-  async createUser(user: InsertUser): Promise<User> {
-    if (this.useLocalStore) {
-      try {
-        // Create user in local store
-        const newUser = await localUserStore.createUser(user);
-        console.log(`User created and saved to local storage: ${user.email}`);
-        return newUser;
-      } catch (error) {
-        console.error("Error using local store for createUser:", error);
-      }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    try {
+      const newUser = {
+        name: insertUser.name,
+        email: insertUser.email,
+        password: insertUser.password,
+        createdAt: new Date().toISOString()
+      };
+      
+      await googleSheetsService.createUser(newUser);
+      
+      // Return as User type
+      return {
+        id: 0, // We don't have IDs in the Google Sheet
+        ...insertUser,
+        createdAt: new Date()
+      };
+    } catch (error) {
+      console.error("Error creating user in Google Sheets:", error);
+      throw error;
     }
-    return memStorage.createUser(user);
   }
-  
-  // All other methods delegate to memory storage
+
+  // For the Recording, Transcript, and Note methods, we'll use the MemStorage implementation
+
+  // Recording methods
+  private memStorage = new MemStorage();
+
   async createRecording(recording: InsertRecording): Promise<Recording> {
-    return memStorage.createRecording(recording);
+    return this.memStorage.createRecording(recording);
   }
-  
+
   async getRecording(id: number): Promise<Recording | undefined> {
-    return memStorage.getRecording(id);
+    return this.memStorage.getRecording(id);
   }
-  
+
   async getAllRecordings(): Promise<Recording[]> {
-    return memStorage.getAllRecordings();
+    return this.memStorage.getAllRecordings();
   }
-  
+
   async updateRecordingStatus(id: number, status: string): Promise<Recording | undefined> {
-    return memStorage.updateRecordingStatus(id, status);
+    return this.memStorage.updateRecordingStatus(id, status);
   }
-  
+
   async updateRecordingTranscribed(id: number, transcribed: boolean): Promise<Recording | undefined> {
-    return memStorage.updateRecordingTranscribed(id, transcribed);
+    return this.memStorage.updateRecordingTranscribed(id, transcribed);
   }
-  
+
   async updateRecordingNotesGenerated(id: number, notesGenerated: boolean): Promise<Recording | undefined> {
-    return memStorage.updateRecordingNotesGenerated(id, notesGenerated);
+    return this.memStorage.updateRecordingNotesGenerated(id, notesGenerated);
   }
-  
+
   async updateRecordingTitle(id: number, title: string): Promise<Recording | undefined> {
-    return memStorage.updateRecordingTitle(id, title);
+    return this.memStorage.updateRecordingTitle(id, title);
   }
-  
+
   async deleteRecording(id: number): Promise<boolean> {
-    return memStorage.deleteRecording(id);
+    return this.memStorage.deleteRecording(id);
   }
-  
+
+  // Transcript methods
   async createTranscript(transcript: InsertTranscript): Promise<Transcript> {
-    return memStorage.createTranscript(transcript);
+    return this.memStorage.createTranscript(transcript);
   }
-  
+
   async getTranscriptByRecordingId(recordingId: number): Promise<Transcript | undefined> {
-    return memStorage.getTranscriptByRecordingId(recordingId);
+    return this.memStorage.getTranscriptByRecordingId(recordingId);
   }
-  
+
+  // Note methods
   async createNote(note: InsertNote): Promise<Note> {
-    return memStorage.createNote(note);
+    return this.memStorage.createNote(note);
   }
-  
+
   async getNoteByRecordingId(recordingId: number): Promise<Note | undefined> {
-    return memStorage.getNoteByRecordingId(recordingId);
+    return this.memStorage.getNoteByRecordingId(recordingId);
   }
-  
+
   async updateNote(id: number, content: string): Promise<Note | undefined> {
-    return memStorage.updateNote(id, content);
+    return this.memStorage.updateNote(id, content);
   }
 }
 
-// Export the enhanced storage instance
-export const storage = new EnhancedStorage();
+// Initialize Google Sheets
+async function initializeGoogleSheets() {
+  try {
+    await googleSheetsService.initializeUserSheet();
+    console.log("Google Sheets initialized successfully");
+    return true;
+  } catch (error) {
+    console.error("Failed to initialize Google Sheets:", error);
+    console.log("Falling back to in-memory storage");
+    return false;
+  }
+}
+
+// Creating a hybrid storage with Google Sheets for users and in-memory for other data
+export class HybridStorage implements IStorage {
+  private sheetsStorage: GoogleSheetsStorage;
+  private memStorage: MemStorage;
+
+  constructor() {
+    this.sheetsStorage = new GoogleSheetsStorage();
+    this.memStorage = new MemStorage();
+  }
+
+  // User methods - use Google Sheets
+  async getUser(id: number): Promise<User | undefined> {
+    return this.sheetsStorage.getUser(id);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return this.sheetsStorage.getUserByUsername(username);
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return this.sheetsStorage.getUserByEmail(email);
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    return this.sheetsStorage.createUser(user);
+  }
+
+  // All other methods - use in-memory storage
+  async createRecording(recording: InsertRecording): Promise<Recording> {
+    return this.memStorage.createRecording(recording);
+  }
+
+  async getRecording(id: number): Promise<Recording | undefined> {
+    return this.memStorage.getRecording(id);
+  }
+
+  async getAllRecordings(): Promise<Recording[]> {
+    return this.memStorage.getAllRecordings();
+  }
+
+  async updateRecordingStatus(id: number, status: string): Promise<Recording | undefined> {
+    return this.memStorage.updateRecordingStatus(id, status);
+  }
+
+  async updateRecordingTranscribed(id: number, transcribed: boolean): Promise<Recording | undefined> {
+    return this.memStorage.updateRecordingTranscribed(id, transcribed);
+  }
+
+  async updateRecordingNotesGenerated(id: number, notesGenerated: boolean): Promise<Recording | undefined> {
+    return this.memStorage.updateRecordingNotesGenerated(id, notesGenerated);
+  }
+
+  async updateRecordingTitle(id: number, title: string): Promise<Recording | undefined> {
+    return this.memStorage.updateRecordingTitle(id, title);
+  }
+
+  async deleteRecording(id: number): Promise<boolean> {
+    return this.memStorage.deleteRecording(id);
+  }
+
+  async createTranscript(transcript: InsertTranscript): Promise<Transcript> {
+    return this.memStorage.createTranscript(transcript);
+  }
+
+  async getTranscriptByRecordingId(recordingId: number): Promise<Transcript | undefined> {
+    return this.memStorage.getTranscriptByRecordingId(recordingId);
+  }
+
+  async createNote(note: InsertNote): Promise<Note> {
+    return this.memStorage.createNote(note);
+  }
+
+  async getNoteByRecordingId(recordingId: number): Promise<Note | undefined> {
+    return this.memStorage.getNoteByRecordingId(recordingId);
+  }
+
+  async updateNote(id: number, content: string): Promise<Note | undefined> {
+    return this.memStorage.updateNote(id, content);
+  }
+}
+
+// Initialize the Google Sheets service at startup
+(async () => {
+  try {
+    await googleSheetsService.initializeUserSheet();
+    console.log("Google Sheets successfully initialized for user storage");
+  } catch (error) {
+    console.error("Error initializing Google Sheets:", error);
+  }
+})();
+
+// Export the hybrid storage implementation
+export const storage = new HybridStorage();
