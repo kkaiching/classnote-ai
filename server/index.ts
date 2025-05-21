@@ -37,8 +37,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Google Sheets integration is now handled in the storage module
-  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
