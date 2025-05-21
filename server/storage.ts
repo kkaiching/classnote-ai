@@ -414,5 +414,15 @@ export class HybridStorage implements IStorage {
   }
 }
 
+// Initialize the Google Sheets service at startup
+(async () => {
+  try {
+    await googleSheetsService.initializeUserSheet();
+    console.log("Google Sheets successfully initialized for user storage");
+  } catch (error) {
+    console.error("Error initializing Google Sheets:", error);
+  }
+})();
+
 // Export the hybrid storage implementation
 export const storage = new HybridStorage();

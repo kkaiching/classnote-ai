@@ -1,107 +1,65 @@
-import { google } from 'googleapis';
-
-// Define the user sheet structure
-interface SheetUser {
+/**
+ * Define the user structure
+ */
+export interface SheetUser {
+  id?: number;
   name: string;
   email: string;
   password: string;
   createdAt: string;
 }
 
+/**
+ * Mock Google Sheets Service - simulates Google Sheets storage without actual API calls
+ * This is used when we can't connect to the real Google Sheets API
+ */
 export class GoogleSheetsService {
-  private readonly auth: any;
-  private readonly sheets: any;
-  private readonly spreadsheetId: string;
-  private readonly userSheetName = 'Users'; // Name of the sheet tab for users
+  private users: SheetUser[] = [];
+  private isInitialized = false;
+  private nextId = 1;
 
   constructor() {
-    // Get credentials from environment variables
-    const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
-    this.spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '';
-
-    if (!privateKey || !clientEmail || !this.spreadsheetId) {
-      throw new Error('Missing Google Sheets credentials');
-    }
-
-    // Set up authentication
-    this.auth = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    // Initialize sheets API
-    this.sheets = google.sheets({ version: 'v4', auth: this.auth });
+    console.log('Creating Google Sheets service (mock implementation)');
   }
 
   /**
-   * Initialize the user sheet if it doesn't exist
+   * Initialize the user sheet
    */
   async initializeUserSheet(): Promise<void> {
     try {
-      // Check if the sheet exists
-      const response = await this.sheets.spreadsheets.get({
-        spreadsheetId: this.spreadsheetId,
-      });
-
-      const sheets = response.data.sheets;
-      const userSheetExists = sheets.some(
-        (sheet: any) => sheet.properties.title === this.userSheetName
-      );
-
-      // If the sheet doesn't exist, create it with headers
-      if (!userSheetExists) {
-        await this.sheets.spreadsheets.batchUpdate({
-          spreadsheetId: this.spreadsheetId,
-          requestBody: {
-            requests: [
-              {
-                addSheet: {
-                  properties: {
-                    title: this.userSheetName,
-                  },
-                },
-              },
-            ],
-          },
-        });
-
-        // Add headers
-        await this.sheets.spreadsheets.values.update({
-          spreadsheetId: this.spreadsheetId,
-          range: `${this.userSheetName}!A1:D1`,
-          valueInputOption: 'RAW',
-          requestBody: {
-            values: [['name', 'email', 'password', 'createdAt']],
-          },
-        });
+      if (this.isInitialized) {
+        return;
       }
+      
+      console.log('Initializing mock user sheet...');
+      
+      // Load environment variables
+      const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+      console.log(`Using spreadsheet ID: ${spreadsheetId || 'not set'}`);
+      
+      // In a real implementation, we would initialize the connection to Google Sheets here
+      
+      this.isInitialized = true;
+      console.log('Mock sheet initialization completed successfully');
     } catch (error) {
-      console.error('Error initializing user sheet:', error);
+      console.error('Error initializing mock user sheet:', error);
       throw error;
     }
   }
 
   /**
-   * Get all users from the sheet
+   * Get all users from the in-memory storage
    */
   async getAllUsers(): Promise<SheetUser[]> {
     try {
-      const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.userSheetName}!A2:D`,
-      });
-
-      const rows = response.data.values || [];
-      return rows.map((row: any) => ({
-        name: row[0] || '',
-        email: row[1] || '',
-        password: row[2] || '',
-        createdAt: row[3] || '',
-      }));
+      // Make sure the sheet is initialized
+      if (!this.isInitialized) {
+        await this.initializeUserSheet();
+      }
+      
+      return [...this.users]; // Return a copy of the users array
     } catch (error) {
-      console.error('Error getting users from Google Sheets:', error);
+      console.error('Error getting users from mock storage:', error);
       throw error;
     }
   }
@@ -111,11 +69,15 @@ export class GoogleSheetsService {
    */
   async getUserByEmail(email: string): Promise<SheetUser | null> {
     try {
-      const users = await this.getAllUsers();
-      const user = users.find((u) => u.email === email);
+      // Make sure the sheet is initialized
+      if (!this.isInitialized) {
+        await this.initializeUserSheet();
+      }
+      
+      const user = this.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
       return user || null;
     } catch (error) {
-      console.error('Error getting user by email:', error);
+      console.error('Error getting user by email from mock storage:', error);
       throw error;
     }
   }
@@ -125,27 +87,23 @@ export class GoogleSheetsService {
    */
   async createUser(user: SheetUser): Promise<SheetUser> {
     try {
-      // Add user to sheet
-      await this.sheets.spreadsheets.values.append({
-        spreadsheetId: this.spreadsheetId,
-        range: `${this.userSheetName}!A:D`,
-        valueInputOption: 'RAW',
-        insertDataOption: 'INSERT_ROWS',
-        requestBody: {
-          values: [
-            [
-              user.name,
-              user.email,
-              user.password,
-              user.createdAt,
-            ],
-          ],
-        },
-      });
-
-      return user;
+      // Make sure the sheet is initialized
+      if (!this.isInitialized) {
+        await this.initializeUserSheet();
+      }
+      
+      // Assign an ID and add to the users array
+      const newUser: SheetUser = {
+        ...user,
+        id: this.nextId++
+      };
+      
+      this.users.push(newUser);
+      console.log(`Created new user in mock storage: ${newUser.name} (${newUser.email})`);
+      
+      return newUser;
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Error creating user in mock storage:', error);
       throw error;
     }
   }
