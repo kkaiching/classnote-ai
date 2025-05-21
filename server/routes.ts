@@ -8,7 +8,6 @@ import { z } from "zod";
 import { insertRecordingSchema, insertTranscriptSchema, insertNoteSchema, insertUserSchema, loginUserSchema } from "@shared/schema";
 import { transcribeAudio, generateNotes, parseTranscriptWithTimestamps } from "./openai";
 import { fileURLToPath } from "url";
-import { googleSheetsService } from "./googleSheets";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, "..", "uploads");
@@ -73,8 +72,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if user with the same email already exists in Google Sheets
-      const existingUser = await googleSheetsService.getUserByEmail(validatedData.data.email);
+      // Check if user with the same email already exists
+      const existingUser = await storage.getUserByEmail(validatedData.data.email);
       if (existingUser) {
         return res.status(409).json({ 
           success: false, 
@@ -82,18 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create user in Google Sheets
-      const newUser = {
-        name: validatedData.data.name,
-        email: validatedData.data.email,
-        password: validatedData.data.password,
-        createdAt: new Date().toISOString()
-      };
-      
-      await googleSheetsService.createUser(newUser);
-      console.log(`User created in Google Sheets: ${newUser.name} (${newUser.email})`);
-      
-      // Create user in storage (for compatibility with the rest of the app)
+      // Create user
       const user = await storage.createUser(validatedData.data);
       
       // Return user without password
@@ -125,41 +113,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`Attempting login for email: ${validatedData.data.email}`);
-      
-      // First, check if user exists in Google Sheets
-      const sheetUser = await googleSheetsService.getUserByEmail(validatedData.data.email);
-      
-      if (!sheetUser) {
-        console.log(`User not found in Google Sheets: ${validatedData.data.email}`);
+      // Check if user exists
+      const user = await storage.getUserByEmail(validatedData.data.email);
+      if (!user) {
         return res.status(401).json({ 
           success: false, 
-          message: "此電子郵件尚未註冊" 
+          message: "登入失敗，請檢查帳號密碼" 
         });
       }
 
-      // Check password against Google Sheets data
-      if (sheetUser.password !== validatedData.data.password) {
-        console.log(`Password incorrect for user: ${validatedData.data.email}`);
+      // Check password
+      if (user.password !== validatedData.data.password) {
         return res.status(401).json({ 
           success: false, 
-          message: "密碼錯誤，請再試一次" 
+          message: "登入失敗，請檢查帳號密碼" 
         });
-      }
-      
-      console.log(`Login successful for user: ${validatedData.data.email}`);
-      
-      // If login is successful in Google Sheets, check/create user in our system
-      let user = await storage.getUserByEmail(validatedData.data.email);
-      
-      // If user doesn't exist in our system but exists in Google Sheets, create it
-      if (!user) {
-        user = await storage.createUser({
-          name: sheetUser.name,
-          email: sheetUser.email,
-          password: sheetUser.password
-        });
-        console.log(`Created user in storage from Google Sheets data: ${user.email}`);
       }
 
       // Return user without password
@@ -186,6 +154,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       success: false, 
       message: "未登入" 
     });
+  });
+  
+  // Check if email exists
+  app.get("/api/user/check-email", async (req: Request, res: Response) => {
+    try {
+      const email = req.query.email as string;
+      
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "必須提供電子郵件"
+        });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      
+      res.json({
+        success: true,
+        exists: !!user
+      });
+    } catch (error) {
+      console.error("Error checking email:", error);
+      res.status(500).json({
+        success: false,
+        message: "檢查電子郵件時發生錯誤"
+      });
+    }
   });
 
   // Get all recordings

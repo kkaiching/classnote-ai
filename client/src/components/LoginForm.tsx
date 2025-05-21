@@ -47,78 +47,84 @@ export function LoginForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        // 根據伺服器響應提供更精確的錯誤訊息
+        // 處理不同的錯誤情況
         if (response.status === 401) {
-          // 檢查是否為「帳號不存在」或「密碼錯誤」
-          if (data.message.includes("帳號") || data.message.includes("電子郵件")) {
-            throw new Error("此帳號尚未註冊");
-          } else {
-            throw new Error("密碼錯誤，請再試一次");
+          if (data.message.includes("檢查帳號密碼")) {
+            // 檢查是否是「帳號不存在」的情況
+            const checkAccountResponse = await fetch(`/api/user/check-email?email=${encodeURIComponent(values.email)}`, {
+              method: "GET"
+            });
+            const checkAccountData = await checkAccountResponse.json();
+            
+            if (checkAccountResponse.ok && !checkAccountData.exists) {
+              // 帳號不存在，建議註冊
+              toast({
+                title: "帳號尚未註冊",
+                description: "您的帳號尚未註冊，請先註冊後再登入",
+                variant: "destructive",
+                action: (
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => navigate("/register")}>
+                      立即註冊
+                    </Button>
+                  </div>
+                ),
+              });
+              return;
+            }
           }
+          
+          // 密碼錯誤
+          toast({
+            title: "密碼錯誤",
+            description: "密碼錯誤，請再試一次",
+            variant: "destructive",
+          });
         } else {
+          // 其他錯誤
           throw new Error(data.message || "登入失敗");
         }
+        return;
       }
 
       // 儲存使用者資訊於 localStorage
       localStorage.setItem("user", JSON.stringify(data.user));
-      
-      // 嘗試載入用戶資料
-      try {
-        const recordingsResponse = await fetch("/api/recordings");
-        if (!recordingsResponse.ok) {
-          toast({
-            title: "注意",
-            description: "用戶資料載入失敗，請重新整理頁面",
-            variant: "destructive",
-          });
-        }
-      } catch (loadError) {
-        console.error("Failed to load user data:", loadError);
-        toast({
-          title: "注意",
-          description: "用戶資料載入失敗，請重新整理頁面",
-          variant: "destructive",
-        });
-      }
       
       toast({
         title: "登入成功",
         description: "歡迎回來！",
       });
 
-      // 導回首頁
-      navigate("/");
-
+      try {
+        // 嘗試載入使用者的錄音資料
+        const recordingsResponse = await fetch("/api/recordings");
+        
+        if (!recordingsResponse.ok) {
+          throw new Error("載入資料失敗");
+        }
+        
+        // 載入成功，導回首頁
+        navigate("/");
+      } catch (dataError) {
+        console.error("Error loading user data:", dataError);
+        toast({
+          title: "警告",
+          description: "載入資料失敗，請重新整理頁面",
+          variant: "destructive",
+        });
+        
+        // 即使載入資料失敗，還是導回首頁
+        navigate("/");
+      }
     } catch (error) {
       console.error("Login failed:", error);
       const message = error instanceof Error ? error.message : "登入失敗，請稍後再試";
       
-      // 特殊錯誤處理，如果是帳號不存在，提示用戶註冊
-      if (message === "此帳號尚未註冊") {
-        toast({
-          title: "帳號不存在",
-          description: (
-            <div>
-              此電子郵件尚未註冊，
-              <Button 
-                variant="link" 
-                className="h-auto p-0 text-white underline" 
-                onClick={() => navigate("/register")}
-              >
-                立即註冊
-              </Button>
-            </div>
-          ),
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "登入失敗",
-          description: message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "登入失敗",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
