@@ -312,5 +312,5 @@ class EnhancedStorage implements IStorage {
   }
 }
 
-// Export the hybrid storage instance
-export const storage = new HybridStorage();
+// Export the enhanced storage instance
+export const storage = new EnhancedStorage();
