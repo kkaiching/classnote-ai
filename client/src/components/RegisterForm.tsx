@@ -51,7 +51,12 @@ export function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "註冊失敗");
+        // 明確區分電子郵件已註冊的錯誤
+        if (data.message === "此電子郵件已被註冊") {
+          throw new Error("此電子郵件已被註冊");
+        } else {
+          throw new Error(data.message || "註冊失敗");
+        }
       }
 
       toast({
@@ -66,11 +71,31 @@ export function RegisterForm() {
       console.error("Registration failed:", error);
       const message = error instanceof Error ? error.message : "註冊失敗，請稍後再試";
       
-      toast({
-        title: "註冊失敗",
-        description: message,
-        variant: "destructive",
-      });
+      // 針對已註冊的情況提供登入引導
+      if (message === "此電子郵件已被註冊") {
+        toast({
+          title: "註冊失敗",
+          description: (
+            <div>
+              此電子郵件已註冊
+              <Button 
+                variant="link" 
+                className="p-0 ml-1 underline" 
+                onClick={() => navigate("/login")}
+              >
+                立即登入
+              </Button>
+            </div>
+          ),
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "註冊失敗",
+          description: message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -62,9 +62,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register new user
   app.post("/api/register", async (req: Request, res: Response) => {
     try {
+      console.log("註冊請求資料:", req.body);
+      
       // Validate request body
       const validatedData = insertUserSchema.safeParse(req.body);
       if (!validatedData.success) {
+        console.log("資料驗證失敗:", validatedData.error.errors);
         return res.status(400).json({ 
           success: false, 
           message: "資料驗證失敗", 
@@ -75,14 +78,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user with the same email already exists
       const existingUser = await storage.getUserByEmail(validatedData.data.email);
       if (existingUser) {
+        console.log("此電子郵件已被註冊:", validatedData.data.email);
         return res.status(409).json({ 
           success: false, 
-          message: "此電子郵件已經被註冊" 
+          message: "此電子郵件已被註冊" 
         });
       }
 
       // Create user
+      console.log("建立新使用者:", validatedData.data.email);
       const user = await storage.createUser(validatedData.data);
+      console.log("使用者已建立:", user.id);
       
       // Return user without password
       const { password, ...userWithoutPassword } = user;
@@ -103,9 +109,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Login user
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
+      console.log("登入請求資料:", req.body);
+      
       // Validate request body
       const validatedData = loginUserSchema.safeParse(req.body);
       if (!validatedData.success) {
+        console.log("登入資料驗證失敗:", validatedData.error.errors);
         return res.status(400).json({ 
           success: false, 
           message: "資料驗證失敗", 
@@ -114,27 +123,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user exists
+      console.log("查詢使用者:", validatedData.data.email);
       const user = await storage.getUserByEmail(validatedData.data.email);
       if (!user) {
+        console.log("使用者不存在:", validatedData.data.email);
         return res.status(401).json({ 
           success: false, 
-          message: "登入失敗，請檢查帳號密碼" 
+          message: "此帳號尚未註冊" 
         });
       }
 
       // Check password
       if (user.password !== validatedData.data.password) {
+        console.log("密碼不符:", validatedData.data.email);
         return res.status(401).json({ 
           success: false, 
-          message: "登入失敗，請檢查帳號密碼" 
+          message: "密碼錯誤，請再試一次" 
         });
       }
 
+      console.log("登入成功:", user.id, user.name);
+      
       // Return user without password
       const { password, ...userWithoutPassword } = user;
       res.json({ 
         success: true, 
-        message: "登入成功", 
+        message: "登入成功，歡迎回來！", 
         user: userWithoutPassword 
       });
     } catch (error) {
