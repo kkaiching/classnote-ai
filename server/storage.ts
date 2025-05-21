@@ -60,12 +60,47 @@ export class HybridStorage implements IStorage {
       this.useGoogleSheets = googleSheetsService.isAvailable();
       if (this.useGoogleSheets) {
         console.log("Google Sheets 連接已建立，將用於用戶資料儲存");
+        
+        // 嘗試將已有的本地用戶資料同步到 Google Sheets
+        await this.syncLocalUsersToGoogleSheets();
       } else {
         console.log("Google Sheets 不可用，僅使用本地檔案儲存");
       }
     } catch (error) {
       console.error("檢查 Google Sheets 可用性時出錯:", error);
       this.useGoogleSheets = false;
+    }
+  }
+  
+  /**
+   * 同步本地用戶資料到 Google Sheets
+   */
+  private async syncLocalUsersToGoogleSheets() {
+    try {
+      if (!this.useGoogleSheets) {
+        return;
+      }
+      
+      // 獲取所有本地用戶
+      const localUsers = Array.from(this.localStorage.users.values());
+      
+      if (localUsers.length === 0) {
+        console.log("沒有本地用戶需要同步");
+        return;
+      }
+      
+      console.log(`開始同步 ${localUsers.length} 個本地用戶到 Google Sheets...`);
+      
+      // 執行批量導入
+      const success = await googleSheetsService.bulkImportUsers(localUsers);
+      
+      if (success) {
+        console.log("本地用戶資料已成功同步到 Google Sheets");
+      } else {
+        console.log("同步用戶資料到 Google Sheets 失敗");
+      }
+    } catch (error) {
+      console.error("同步用戶資料時出錯:", error);
     }
   }
 

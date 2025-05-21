@@ -296,6 +296,79 @@ export class GoogleSheetsService {
     }
     return this.initialized;
   }
+  
+  /**
+   * Bulk import existing users to Google Sheets
+   * This is helpful for migrating existing local users to Google Sheets
+   */
+  async bulkImportUsers(users: User[]): Promise<boolean> {
+    try {
+      console.log(`開始批量導入 ${users.length} 個用戶到 Google Sheets...`);
+      
+      if (!this.initialized) {
+        console.log("Google Sheets 尚未初始化，嘗試初始化...");
+        await this.initialize();
+        
+        if (!this.initialized) {
+          console.log("初始化失敗，無法匯入用戶");
+          return false;
+        }
+      }
+      
+      // Get current users to avoid duplicates
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range: 'users!A:E'
+      });
+      
+      const rows = response.data.values || [];
+      console.log(`現有 ${rows.length - 1} 筆用戶資料在 Google Sheets`);
+      
+      // Extract existing emails to avoid duplicates
+      const existingEmails = new Set<string>();
+      for (let i = 1; i < rows.length; i++) {
+        existingEmails.add(rows[i][2]); // Email is at index 2
+      }
+      
+      // Prepare users for import, excluding any that already exist
+      const usersToImport = users.filter(user => !existingEmails.has(user.email));
+      
+      if (usersToImport.length === 0) {
+        console.log("沒有新用戶需要匯入");
+        return true;
+      }
+      
+      console.log(`將匯入 ${usersToImport.length} 個用戶...`);
+      
+      // Prepare values for batch import
+      const values = usersToImport.map(user => [
+        user.id.toString(),
+        user.name,
+        user.email,
+        user.password,
+        user.createdAt.toISOString()
+      ]);
+      
+      // Import all users in one batch
+      const appendResponse = await this.sheets.spreadsheets.values.append({
+        spreadsheetId: this.spreadsheetId,
+        range: 'users!A:E',
+        valueInputOption: 'RAW',
+        requestBody: { values }
+      });
+      
+      console.log(`成功匯入 ${values.length} 個用戶: `, 
+        appendResponse.data.updates?.updatedRows || 0, '行更新');
+      
+      return true;
+    } catch (error) {
+      console.error("匯入用戶時出錯:", error);
+      if (error.response) {
+        console.error("API 錯誤響應:", error.response.data);
+      }
+      return false;
+    }
+  }
 }
 
 export const googleSheetsService = new GoogleSheetsService();
