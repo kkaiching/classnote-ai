@@ -326,9 +326,15 @@ export class GoogleSheetsService {
       
       // Extract existing emails to avoid duplicates
       const existingEmails = new Set<string>();
-      for (let i = 1; i < rows.length; i++) {
-        existingEmails.add(rows[i][2]); // Email is at index 2
+      if (rows.length > 0) {
+        for (let i = 1; i < rows.length; i++) {
+          if (rows[i] && rows[i][2]) {
+            existingEmails.add(rows[i][2]); // Email is at index 2
+          }
+        }
       }
+      
+      console.log("現有郵箱列表:", Array.from(existingEmails));
       
       // Prepare users for import, excluding any that already exist
       const usersToImport = users.filter(user => !existingEmails.has(user.email));
@@ -341,13 +347,26 @@ export class GoogleSheetsService {
       console.log(`將匯入 ${usersToImport.length} 個用戶...`);
       
       // Prepare values for batch import
-      const values = usersToImport.map(user => [
-        user.id.toString(),
-        user.name,
-        user.email,
-        user.password,
-        user.createdAt.toISOString()
-      ]);
+      const values = usersToImport.map(user => {
+        // 確保創建時間是有效的日期對象
+        let createdAtStr;
+        if (user.createdAt instanceof Date) {
+          createdAtStr = user.createdAt.toISOString();
+        } else if (typeof user.createdAt === 'string') {
+          createdAtStr = user.createdAt;
+        } else {
+          // 如果 createdAt 無效或不存在，使用當前時間
+          createdAtStr = new Date().toISOString();
+        }
+        
+        return [
+          user.id.toString(),
+          user.name,
+          user.email,
+          user.password,
+          createdAtStr
+        ];
+      });
       
       // Import all users in one batch
       const appendResponse = await this.sheets.spreadsheets.values.append({
