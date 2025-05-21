@@ -1,5 +1,6 @@
 import { recordings, transcripts, notes, type Recording, type InsertRecording, type Transcript, type InsertTranscript, type Note, type InsertNote, users, type User, type InsertUser } from "@shared/schema";
 import * as googleSheets from "./googleSheetsDirect";
+import { localUserStore } from "./localUserStore";
 
 // Storage interface
 export interface IStorage {
@@ -201,79 +202,58 @@ export class MemStorage implements IStorage {
 // Create base memory storage
 export const memStorage = new MemStorage();
 
-// Create a hybrid storage class that will attempt to use Google Sheets for users
-class HybridStorage implements IStorage {
-  private useGoogleSheets: boolean = false;
+// Enhanced storage class that uses local file storage for user data persistence
+class EnhancedStorage implements IStorage {
+  private useLocalStore: boolean = true;
   
   constructor() {
-    // Initialize Google Sheets integration
-    this.initializeGoogleSheets();
+    console.log("Initializing enhanced storage with local file persistence for user data");
   }
   
-  private async initializeGoogleSheets() {
-    try {
-      // Check if Google Sheets is available
-      this.useGoogleSheets = await googleSheets.isGoogleSheetsAvailable();
-      
-      if (this.useGoogleSheets) {
-        // Initialize the Users sheet
-        await googleSheets.initializeUserSheet();
-        console.log("Google Sheets initialized successfully for user authentication");
-      } else {
-        console.log("Google Sheets not available, using memory storage for user data");
-      }
-    } catch (error) {
-      console.error("Error initializing Google Sheets:", error);
-      this.useGoogleSheets = false;
-      console.log("Falling back to memory storage for user data");
-    }
-  }
-  
-  // User methods with Google Sheets integration
+  // User methods with local storage integration
   async getUser(id: number): Promise<User | undefined> {
-    try {
-      if (this.useGoogleSheets) {
-        return await googleSheets.getUser(id);
+    if (this.useLocalStore) {
+      try {
+        return await localUserStore.getUser(id);
+      } catch (error) {
+        console.error("Error using local store for getUser:", error);
       }
-    } catch (error) {
-      console.error("Error using Google Sheets for getUser, falling back to memory storage:", error);
     }
     return memStorage.getUser(id);
   }
   
   async getUserByUsername(username: string): Promise<User | undefined> {
-    try {
-      if (this.useGoogleSheets) {
-        // In our implementation, username is email
-        return await googleSheets.getUserByEmail(username);
+    if (this.useLocalStore) {
+      try {
+        return await localUserStore.getUserByUsername(username);
+      } catch (error) {
+        console.error("Error using local store for getUserByUsername:", error);
       }
-    } catch (error) {
-      console.error("Error using Google Sheets for getUserByUsername, falling back to memory storage:", error);
     }
     return memStorage.getUserByUsername(username);
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
-    try {
-      if (this.useGoogleSheets) {
-        return await googleSheets.getUserByEmail(email);
+    if (this.useLocalStore) {
+      try {
+        return await localUserStore.getUserByEmail(email);
+      } catch (error) {
+        console.error("Error using local store for getUserByEmail:", error);
       }
-    } catch (error) {
-      console.error("Error using Google Sheets for getUserByEmail, falling back to memory storage:", error);
     }
     return memStorage.getUserByEmail(email);
   }
   
   async createUser(user: InsertUser): Promise<User> {
-    try {
-      if (this.useGoogleSheets) {
-        const newUser = await googleSheets.createUser(user);
-        // Also save to memory storage as backup
-        await memStorage.createUser({...user, id: newUser.id});
+    if (this.useLocalStore) {
+      try {
+        // Create user in local store
+        const newUser = await localUserStore.createUser(user);
+        console.log(`User created and saved to local storage: ${user.email}`);
         return newUser;
+      } catch (error) {
+        console.error("Error using local store for createUser:", error);
       }
-    } catch (error) {
-      console.error("Error using Google Sheets for createUser, falling back to memory storage:", error);
     }
     return memStorage.createUser(user);
   }

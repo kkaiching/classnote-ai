@@ -37,13 +37,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize Google Sheets for user authentication
-  try {
-    await initializeUserSheet();
-    log("Google Sheets initialized successfully");
-  } catch (error) {
-    log(`Error initializing Google Sheets: ${error}`);
-  }
+  // Google Sheets integration is now handled in the storage module
   
   const server = await registerRoutes(app);
 
