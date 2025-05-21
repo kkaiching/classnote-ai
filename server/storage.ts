@@ -43,14 +43,29 @@ export class HybridStorage implements IStorage {
   constructor() {
     this.localStorage = new MemStorage();
     
+    // Load data from local file initially
+    this.loadFromFile();
+    
     // Check if Google Sheets integration is available
     this.useGoogleSheets = googleSheetsService.isAvailable();
     
-    if (!this.useGoogleSheets) {
-      console.log("Google Sheets 不可用，僅使用本地檔案儲存");
-      
-      // Load data from local file if available
-      this.loadFromFile();
+    // Schedule a check after a brief delay to see if Google Sheets becomes available
+    setTimeout(() => {
+      this.checkGoogleSheetsAvailability();
+    }, 3000);
+  }
+  
+  private async checkGoogleSheetsAvailability() {
+    try {
+      this.useGoogleSheets = googleSheetsService.isAvailable();
+      if (this.useGoogleSheets) {
+        console.log("Google Sheets 連接已建立，將用於用戶資料儲存");
+      } else {
+        console.log("Google Sheets 不可用，僅使用本地檔案儲存");
+      }
+    } catch (error) {
+      console.error("檢查 Google Sheets 可用性時出錯:", error);
+      this.useGoogleSheets = false;
     }
   }
 

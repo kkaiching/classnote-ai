@@ -201,9 +201,19 @@ export class GoogleSheetsService {
    */
   async createUser(user: InsertUser): Promise<User> {
     try {
+      console.log("開始創建使用者：", user.email);
+      
       if (!this.initialized) {
+        console.log("Google Sheets 尚未初始化，嘗試初始化...");
         await this.initialize();
+        
+        if (!this.initialized) {
+          console.log("初始化失敗，無法創建使用者");
+          throw new Error("Google Sheets service not initialized");
+        }
       }
+      
+      console.log("Google Sheets 已初始化，正在獲取用戶數據...");
       
       // Get the current row count to determine the ID
       const response = await this.sheets.spreadsheets.values.get({
@@ -212,8 +222,28 @@ export class GoogleSheetsService {
       });
       
       const rows = response.data.values || [];
-      const id = rows.length; // Use the row count as the ID
+      console.log("現有行數:", rows.length);
+      
+      // 如果沒有標題行，先添加一個
+      let id = rows.length;
+      if (rows.length === 0) {
+        console.log("添加標題行...");
+        await this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.spreadsheetId,
+          range: 'users!A:E',
+          valueInputOption: 'RAW',
+          requestBody: {
+            values: [USER_HEADERS]
+          }
+        });
+        id = 1; // 標題行後的第一行
+      } else {
+        // 如果有數據，使用實際的行數（包括標題行）
+        id = rows.length;
+      }
+      
       const createdAt = new Date();
+      console.log("創建ID:", id, "創建時間:", createdAt);
       
       // Create the user object
       const newUser: User = {
@@ -222,8 +252,10 @@ export class GoogleSheetsService {
         createdAt
       };
       
+      console.log("正在將用戶添加到試算表...");
+      
       // Add the user to the sheet
-      await this.sheets.spreadsheets.values.append({
+      const appendResponse = await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
         range: 'users!A:E',
         valueInputOption: 'RAW',
@@ -240,17 +272,28 @@ export class GoogleSheetsService {
         }
       });
       
+      console.log("用戶添加成功:", appendResponse.data.updates);
       return newUser;
     } catch (error) {
-      console.error("Error creating user:", error);
+      console.error("創建用戶時出錯:", error);
+      if (error.response) {
+        console.error("API 錯誤響應:", error.response.data);
+      }
       throw error;
     }
   }
 
   /**
    * Check if the Google Sheets integration is available
+   * Also reinitialize if needed
    */
   isAvailable(): boolean {
+    // If we're not initialized, try to initialize
+    if (!this.initialized) {
+      this.initialize().catch(err => {
+        console.error("Failed to initialize Google Sheets on availability check:", err);
+      });
+    }
     return this.initialized;
   }
 }

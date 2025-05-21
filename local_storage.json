@@ -9,12 +9,22 @@
         "id": 1,
         "createdAt": "2025-05-21T03:47:31.437Z"
       }
+    ],
+    [
+      2,
+      {
+        "name": "xlab",
+        "email": "xlab_service@cmoney.com.tw",
+        "password": "xlabxlab",
+        "id": 2,
+        "createdAt": "2025-05-21T03:51:07.319Z"
+      }
     ]
   ],
   "recordings": [],
   "transcripts": [],
   "notes": [],
-  "userCurrentId": 2,
+  "userCurrentId": 3,
   "recordingCurrentId": 1,
   "transcriptCurrentId": 1,
   "noteCurrentId": 1
