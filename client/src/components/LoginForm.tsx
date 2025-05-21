@@ -47,14 +47,7 @@ export function LoginForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        // 針對不同錯誤類型提供特定訊息
-        if (data.message === "此帳號尚未註冊") {
-          throw new Error("此帳號尚未註冊");
-        } else if (data.message === "密碼錯誤，請再試一次") {
-          throw new Error("密碼錯誤，請再試一次");
-        } else {
-          throw new Error(data.message || "登入失敗");
-        }
+        throw new Error(data.message || "登入失敗");
       }
 
       // 儲存使用者資訊於 localStorage
@@ -62,7 +55,7 @@ export function LoginForm() {
       
       toast({
         title: "登入成功",
-        description: data.message || "歡迎回來！",
+        description: "歡迎回來！",
       });
 
       // 導回首頁
@@ -72,31 +65,11 @@ export function LoginForm() {
       console.error("Login failed:", error);
       const message = error instanceof Error ? error.message : "登入失敗，請稍後再試";
       
-      // 針對特定錯誤提供註冊引導
-      if (message === "此帳號尚未註冊") {
-        toast({
-          title: "帳號未註冊",
-          description: (
-            <div>
-              此帳號尚未註冊
-              <Button 
-                variant="link" 
-                className="p-0 ml-1 underline" 
-                onClick={() => navigate("/register")}
-              >
-                立即註冊
-              </Button>
-            </div>
-          ),
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "登入失敗",
-          description: message,
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "登入失敗",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
