@@ -127,53 +127,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Attempting login for email: ${validatedData.data.email}`);
       
-      // First, check if user exists in Google Sheets
-      const sheetUser = await googleSheetsService.getUserByEmail(validatedData.data.email);
+      // Use the new authentication method
+      const authResult = await googleSheetsService.authenticateUser(
+        validatedData.data.email,
+        validatedData.data.password
+      );
       
-      if (!sheetUser) {
-        console.log(`User not found in Google Sheets: ${validatedData.data.email}`);
+      // If authentication failed, return the error message
+      if (!authResult.success) {
+        console.log(`Login failed for ${validatedData.data.email}: ${authResult.message}`);
         return res.status(401).json({ 
           success: false, 
-          message: "此電子郵件尚未註冊" 
-        });
-      }
-
-      // Check password against Google Sheets data
-      if (sheetUser.password !== validatedData.data.password) {
-        console.log(`Password incorrect for user: ${validatedData.data.email}`);
-        return res.status(401).json({ 
-          success: false, 
-          message: "密碼錯誤，請再試一次" 
+          message: authResult.message 
         });
       }
       
+      // Authentication successful
       console.log(`Login successful for user: ${validatedData.data.email}`);
       
       // If login is successful in Google Sheets, check/create user in our system
       let user = await storage.getUserByEmail(validatedData.data.email);
       
       // If user doesn't exist in our system but exists in Google Sheets, create it
-      if (!user) {
+      if (!user && authResult.user) {
         user = await storage.createUser({
-          name: sheetUser.name,
-          email: sheetUser.email,
-          password: sheetUser.password
+          name: authResult.user.name,
+          email: authResult.user.email,
+          password: authResult.user.password
         });
         console.log(`Created user in storage from Google Sheets data: ${user.email}`);
+      }
+
+      if (!user) {
+        return res.status(500).json({
+          success: false,
+          message: "系統錯誤，無法載入用戶資料"
+        });
       }
 
       // Return user without password
       const { password, ...userWithoutPassword } = user;
       res.json({ 
         success: true, 
-        message: "登入成功", 
+        message: authResult.message, 
         user: userWithoutPassword 
       });
     } catch (error) {
       console.error("Error logging in user:", error);
+      const errorMessage = error instanceof Error ? error.message : "登入失敗，請稍後再試";
       res.status(500).json({ 
         success: false, 
-        message: "登入失敗，請稍後再試" 
+        message: errorMessage 
       });
     }
   });

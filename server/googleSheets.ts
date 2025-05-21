@@ -92,6 +92,12 @@ export class GoogleSheetsService {
         await this.initializeUserSheet();
       }
       
+      // Check if user with the same email already exists
+      const existingUser = await this.getUserByEmail(user.email);
+      if (existingUser) {
+        throw new Error(`此電子郵件已註冊`);
+      }
+      
       // Assign an ID and add to the users array
       const newUser: SheetUser = {
         ...user,
@@ -105,6 +111,47 @@ export class GoogleSheetsService {
     } catch (error) {
       console.error('Error creating user in mock storage:', error);
       throw error;
+    }
+  }
+  
+  /**
+   * Authenticate user with email and password
+   */
+  async authenticateUser(email: string, password: string): Promise<{success: boolean; user?: SheetUser; message: string}> {
+    try {
+      // Make sure the sheet is initialized
+      if (!this.isInitialized) {
+        await this.initializeUserSheet();
+      }
+      
+      // Check if user exists
+      const user = await this.getUserByEmail(email);
+      
+      // User not found
+      if (!user) {
+        return {
+          success: false,
+          message: "此電子郵件尚未註冊"
+        };
+      }
+      
+      // Check password
+      if (user.password !== password) {
+        return {
+          success: false,
+          message: "密碼錯誤，請再試一次"
+        };
+      }
+      
+      // Authentication successful
+      return {
+        success: true,
+        user,
+        message: "登入成功，歡迎回來！"
+      };
+    } catch (error) {
+      console.error('Error authenticating user:', error);
+      throw new Error("登入過程發生錯誤，請稍後再試");
     }
   }
 }
