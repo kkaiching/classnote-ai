@@ -197,4 +197,132 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const memStorage = new MemStorage();
+
+// 增強版儲存層 - 支持 Google Sheets
+class EnhancedStorage implements IStorage {
+  private sheetsStorage: Partial<IStorage> = {};
+  private useGoogleSheets: boolean = false;
+  private initialized: boolean = false;
+
+  constructor() {
+    this.init().catch(err => {
+      console.error('Error initializing EnhancedStorage:', err);
+    });
+  }
+
+  private async init() {
+    try {
+      // 嘗試導入 Google Sheets 適配器
+      const { createSheetsAdapter } = await import('./sheetsAdapter');
+      this.sheetsStorage = await createSheetsAdapter();
+      
+      // 如果 Google Sheets 適配器有效（至少實現了基本的用戶方法）
+      this.useGoogleSheets = !!(this.sheetsStorage.createUser && this.sheetsStorage.getUserByEmail);
+      
+      if (this.useGoogleSheets) {
+        console.log('Using Google Sheets for user storage');
+      } else {
+        console.log('Falling back to mock storage');
+      }
+    } catch (error) {
+      console.error('Failed to initialize Google Sheets adapter:', error);
+      console.log('Falling back to mock storage');
+    } finally {
+      this.initialized = true;
+    }
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    if (this.useGoogleSheets && this.sheetsStorage.getUser) {
+      return this.sheetsStorage.getUser(id);
+    }
+    return memStorage.getUser(id);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    if (this.useGoogleSheets && this.sheetsStorage.getUserByUsername) {
+      return this.sheetsStorage.getUserByUsername(username);
+    }
+    return memStorage.getUserByUsername(username);
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    if (this.useGoogleSheets && this.sheetsStorage.getUserByEmail) {
+      return this.sheetsStorage.getUserByEmail(email);
+    }
+    return memStorage.getUserByEmail(email);
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    if (this.useGoogleSheets && this.sheetsStorage.createUser) {
+      try {
+        const newUser = await this.sheetsStorage.createUser(user);
+        console.log('Created new user:', user.name, '(' + user.email + ')');
+        return newUser;
+      } catch (error) {
+        console.error('Error creating user in Google Sheets:', error);
+        throw error;
+      }
+    }
+    return memStorage.createUser(user);
+  }
+
+  // Recording methods
+  async createRecording(recording: InsertRecording): Promise<Recording> {
+    return memStorage.createRecording(recording);
+  }
+
+  async getRecording(id: number): Promise<Recording | undefined> {
+    return memStorage.getRecording(id);
+  }
+
+  async getAllRecordings(): Promise<Recording[]> {
+    return memStorage.getAllRecordings();
+  }
+
+  async updateRecordingStatus(id: number, status: string): Promise<Recording | undefined> {
+    return memStorage.updateRecordingStatus(id, status);
+  }
+
+  async updateRecordingTranscribed(id: number, transcribed: boolean): Promise<Recording | undefined> {
+    return memStorage.updateRecordingTranscribed(id, transcribed);
+  }
+
+  async updateRecordingNotesGenerated(id: number, notesGenerated: boolean): Promise<Recording | undefined> {
+    return memStorage.updateRecordingNotesGenerated(id, notesGenerated);
+  }
+
+  async updateRecordingTitle(id: number, title: string): Promise<Recording | undefined> {
+    return memStorage.updateRecordingTitle(id, title);
+  }
+
+  async deleteRecording(id: number): Promise<boolean> {
+    return memStorage.deleteRecording(id);
+  }
+
+  // Transcript methods
+  async createTranscript(transcript: InsertTranscript): Promise<Transcript> {
+    return memStorage.createTranscript(transcript);
+  }
+
+  async getTranscriptByRecordingId(recordingId: number): Promise<Transcript | undefined> {
+    return memStorage.getTranscriptByRecordingId(recordingId);
+  }
+
+  // Note methods
+  async createNote(note: InsertNote): Promise<Note> {
+    return memStorage.createNote(note);
+  }
+
+  async getNoteByRecordingId(recordingId: number): Promise<Note | undefined> {
+    return memStorage.getNoteByRecordingId(recordingId);
+  }
+
+  async updateNote(id: number, content: string): Promise<Note | undefined> {
+    return memStorage.updateNote(id, content);
+  }
+}
+
+export const storage = new EnhancedStorage();
